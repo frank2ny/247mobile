@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "247 Digital TV TZ",
+    "name": "247 Digital Swahili Radio",
     "slug": "247-digital-tv-tz",
-    "version": "1.0.0",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "digitaltvtz",
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.digitaltvtz.app",
-      "versionCode": 1,
+      "versionCode": 6,
       "adaptiveIcon": {
         "backgroundColor": "#0a0a0a",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -22,7 +22,6 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true,
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
@@ -34,6 +33,14 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
       [
         "expo-audio",
         {
@@ -52,7 +59,8 @@
           }
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,

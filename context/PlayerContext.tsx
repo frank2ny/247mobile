@@ -24,7 +24,7 @@ interface PlayerContextType extends AudioState {
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
-const RADIO_STREAM_URL = 'https://ice-11.spilarinn.is/kissfm';
+const RADIO_STREAM_URL = 'https://a4.asurahosting.com:8330/radio.mp3';
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentTrack, setCurrentTrack] = useState<AudioState['currentTrack']>({

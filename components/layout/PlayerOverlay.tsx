@@ -45,7 +45,7 @@ export const PlayerOverlay = () => {
     return () => {
       if (hideTimer.current) clearTimeout(hideTimer.current);
     };
-  }, [isPlaying]);
+  }, [isPlaying, tooltipOpacity]);
 
   // Hide overlay on the main radio/player page
   if (!currentTrack || pathname === '/radio') return null;

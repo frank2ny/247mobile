@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, Image, Pressable, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Radio, Bell, TrendingUp, Mic, Calendar, MapPin, ChevronRight } from 'lucide-react-native';
+import { Radio, Bell, Mic, Calendar, MapPin, Tv } from 'lucide-react-native';
 import { useState } from 'react';
 
 // Mocks
@@ -86,20 +86,29 @@ export default function HomeScreen() {
         </Pressable>
 
         {/* Action Grid */}
-        <View className="flex-row gap-4 mb-8">
-          <Pressable onPress={() => router.push('/radio')} className="flex-1 p-6 rounded-[32px] bg-white border border-black/5 shadow-sm">
-            <View className="w-12 h-12 rounded-2xl bg-primary-500/10 items-center justify-center mb-6">
-              <Radio color="#f97316" size={24} />
+        <View className="flex-row gap-3 mb-8">
+          <Pressable onPress={() => router.push('/radio')} className="flex-1 p-4 rounded-[28px] bg-white border border-black/5 shadow-sm">
+            <View className="w-10 h-10 rounded-2xl bg-primary-500/10 items-center justify-center mb-4">
+              <Radio color="#f97316" size={20} />
             </View>
-            <Text className="font-black text-sm text-text-main">Radio Hub</Text>
-            <Text className="text-[10px] text-text-muted uppercase font-bold tracking-widest mt-1">Listen Live</Text>
+            <Text className="font-black text-xs text-text-main" numberOfLines={1}>Radio Hub</Text>
+            <Text className="text-[9px] text-text-muted uppercase font-bold tracking-wider mt-0.5">Listen Live</Text>
           </Pressable>
-          <Pressable onPress={() => router.push('/podcasts')} className="flex-1 p-6 rounded-[32px] bg-white border border-black/5 shadow-sm">
-            <View className="w-12 h-12 rounded-2xl bg-[#eab308]/10 items-center justify-center mb-6">
-              <Mic color="#eab308" size={24} />
+
+          <Pressable onPress={() => router.push('/tv')} className="flex-1 p-4 rounded-[28px] bg-white border border-black/5 shadow-sm">
+            <View className="w-10 h-10 rounded-2xl bg-red-500/10 items-center justify-center mb-4">
+              <Tv color="#ef4444" size={20} />
             </View>
-            <Text className="font-black text-sm text-text-main">Podcasts</Text>
-            <Text className="text-[10px] text-text-muted uppercase font-bold tracking-widest mt-1">On Demand</Text>
+            <Text className="font-black text-xs text-text-main" numberOfLines={1}>Digital TV</Text>
+            <Text className="text-[9px] text-text-muted uppercase font-bold tracking-wider mt-0.5">Watch Feed</Text>
+          </Pressable>
+
+          <Pressable onPress={() => router.push('/podcasts')} className="flex-1 p-4 rounded-[28px] bg-white border border-black/5 shadow-sm">
+            <View className="w-10 h-10 rounded-2xl bg-[#eab308]/10 items-center justify-center mb-4">
+              <Mic color="#eab308" size={20} />
+            </View>
+            <Text className="font-black text-xs text-text-main" numberOfLines={1}>Podcasts</Text>
+            <Text className="text-[9px] text-text-muted uppercase font-bold tracking-wider mt-0.5">On Demand</Text>
           </Pressable>
         </View>
 

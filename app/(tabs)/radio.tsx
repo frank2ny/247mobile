@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, ScrollView, Pressable, Platform, ActivityIndicator, Dimensions, StyleSheet, Animated } from 'react-native';
+import { View, Text, Image, ScrollView, Pressable, ActivityIndicator, StyleSheet, Animated } from 'react-native';
 import { Play, Pause, ChevronDown, Bell, Share2, Calendar, Clock, Menu, Globe } from 'lucide-react-native';
 import { usePlayer } from '../../context/PlayerContext';
 import { useRouter } from 'expo-router';
@@ -16,7 +16,6 @@ const MOCK_HOSTS = [
 ];
 
 type Tab = 'player' | 'schedule' | 'hosts';
-const { width } = Dimensions.get('window');
 
 export default function RadioScreen() {
   const { currentTrack, isPlaying, toggle, isBuffering } = usePlayer();
@@ -43,7 +42,7 @@ export default function RadioScreen() {
         tension: 60,
       }),
     ]).start();
-  }, [isPlaying]);
+  }, [isPlaying, btnScale, discScale]);
 
   if (!currentTrack) return null;
 
@@ -129,7 +128,7 @@ export default function RadioScreen() {
               <View style={styles.sectionHeader}>
                 <View>
                    <Text style={styles.sectionTitle}>Timeline</Text>
-                   <Text style={styles.sectionSubtitle}>Today's Broadcast</Text>
+                   <Text style={styles.sectionSubtitle}>Today&apos;s Broadcast</Text>
                 </View>
                 <View style={styles.dateBadge}>
                   <Calendar color="#f97316" size={16} />

@@ -1,112 +1,110 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, Pressable, Image, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Radio, Tv, Newspaper, Mic, Compass, ChevronRight } from 'lucide-react-native';
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+const CHANNELS = [
+  {
+    id: 'c1',
+    title: '247 Digital Radio',
+    subtitle: 'Swahili Live Streaming 24/7',
+    icon: Radio,
+    route: '/radio',
+    color: '#f97316',
+    imageUrl: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=800'
+  },
+  {
+    id: 'c2',
+    title: 'Digital TV TZ Live',
+    subtitle: '1080P HD Live Video Stream',
+    icon: Tv,
+    route: '/tv',
+    color: '#ef4444',
+    imageUrl: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=800'
+  },
+  {
+    id: 'c3',
+    title: 'Digital Press & News',
+    subtitle: 'Latest Tanzania Breaking News',
+    icon: Newspaper,
+    route: '/news',
+    color: '#3b82f6',
+    imageUrl: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?q=80&w=800'
+  },
+  {
+    id: 'c4',
+    title: 'EduTech & Podcasts',
+    subtitle: 'On-Demand Audio Shows',
+    icon: Mic,
+    route: '/podcasts',
+    color: '#eab308',
+    imageUrl: 'https://images.unsplash.com/photo-1593697821252-0c9137d9fc45?q=80&w=800'
+  }
+];
 
-export default function TabTwoScreen() {
+export default function ExploreScreen() {
+  const router = useRouter();
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <View className="flex-1 bg-[#0a0a0a]">
+      {/* Header */}
+      <View 
+        className="px-6 py-4 border-b border-white/10 bg-[#0a0a0a] z-50 flex-row items-center justify-between"
+        style={Platform.OS === 'ios' ? { paddingTop: 54 } : { paddingTop: 40 }}
+      >
+        <View>
+          <Text className="text-2xl font-black text-white uppercase tracking-tight">
+            Explore <Text className="text-primary-500">Channels</Text>
+          </Text>
+          <Text className="text-[9px] font-black text-white/40 uppercase tracking-[2px]">Digital Media Directory</Text>
+        </View>
+
+        <View className="w-11 h-11 rounded-2xl bg-primary-500/10 items-center justify-center border border-primary-500/20">
+          <Compass color="#f97316" size={22} />
+        </View>
+      </View>
+
+      <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ paddingBottom: 120 }}>
+        {/* Channel Cards */}
+        <View className="gap-6 mb-8">
+          {CHANNELS.map((ch) => {
+            const Icon = ch.icon;
+            return (
+              <Pressable
+                key={ch.id}
+                onPress={() => router.push(ch.route as any)}
+                className="w-full h-44 rounded-[32px] overflow-hidden relative border border-white/10 shadow-2xl active:scale-[0.98]"
+              >
+                <Image source={{ uri: ch.imageUrl }} className="w-full h-full absolute inset-0" />
+                <View className="absolute inset-0 bg-black/60" />
+
+                <View className="absolute inset-0 p-6 justify-between">
+                  <View className="flex-row items-center justify-between">
+                    <View 
+                      className="w-12 h-12 rounded-2xl items-center justify-center border border-white/20"
+                      style={{ backgroundColor: `${ch.color}30` }}
+                    >
+                      <Icon color={ch.color} size={24} />
+                    </View>
+                    <View className="w-8 h-8 rounded-full bg-white/10 items-center justify-center">
+                      <ChevronRight color="white" size={18} />
+                    </View>
+                  </View>
+
+                  <View>
+                    <Text className="text-2xl font-black text-white uppercase tracking-tight leading-tight">
+                      {ch.title}
+                    </Text>
+                    <Text className="text-xs font-bold text-white/60 mt-1 uppercase tracking-wider">
+                      {ch.subtitle}
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-});

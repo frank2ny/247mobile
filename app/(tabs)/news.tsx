@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Share } from 'react-native';
-import { Newspaper, ArrowLeft, Calendar, Share2 } from 'lucide-react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Share, RefreshControl } from 'react-native';
+import { ArrowLeft, Calendar, Share2, RefreshCw } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 // Constants locally defined to avoid import issues until everything is ported
@@ -11,34 +11,48 @@ export default function NewsScreen() {
   const [categories, setCategories] = useState<string[]>(['All']);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/posts?_embed&per_page=15`);
-        const data = await res.json();
-        const formatted = data.map((post: any) => ({
-          id: post.id,
-          title: post.title.rendered,
-          excerpt: post.excerpt.rendered.replace(/<[^>]*>?/gm, '').substring(0, 80) + '...',
-          date: new Date(post.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-          imageUrl: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?q=80&w=800',
-          link: post.link,
-          category: post._embedded?.['wp:term']?.[0]?.[0]?.name || 'News'
-        }));
-        
-        const uniqueCats = Array.from(new Set(formatted.map((item: any) => item.category))) as string[];
-        setCategories(['All', ...uniqueCats]);
-        setNews(formatted);
-      } catch (err) {
-        console.error('Failed to fetch news:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchNews();
+  const fetchNews = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await fetch(`${API_BASE}/posts?_embed&per_page=15`);
+      if (!res.ok) throw new Error('Failed to load news posts');
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error('Invalid response format');
+
+      const formatted = data.map((post: any) => ({
+        id: post.id,
+        title: post.title.rendered,
+        excerpt: post.excerpt.rendered.replace(/<[^>]*>?/gm, '').substring(0, 80) + '...',
+        date: new Date(post.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+        imageUrl: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?q=80&w=800',
+        link: post.link,
+        category: post._embedded?.['wp:term']?.[0]?.[0]?.name || 'News'
+      }));
+      
+      const uniqueCats = Array.from(new Set(formatted.map((item: any) => item.category))) as string[];
+      setCategories(['All', ...uniqueCats]);
+      setNews(formatted);
+    } catch (err: any) {
+      console.error('Failed to fetch news:', err);
+      setError(err.message || 'Unable to connect to news server.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchNews();
+  }, [fetchNews]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchNews();
+  }, [fetchNews]);
 
   const handleShare = async (post: any) => {
     try {
@@ -84,10 +98,24 @@ export default function NewsScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingTop: 170, paddingBottom: 120 }}>
+      <ScrollView 
+        className="flex-1 px-4" 
+        contentContainerStyle={{ paddingTop: 170, paddingBottom: 120 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" colors={['#f97316']} />
+        }
+      >
         {loading ? (
           <View className="items-center justify-center py-20">
             <ActivityIndicator color="#f97316" size="large" />
+          </View>
+        ) : error ? (
+          <View className="items-center justify-center py-16 px-6 bg-white rounded-3xl border border-black/5 shadow-sm">
+            <Text className="text-sm font-bold text-gray-800 text-center mb-2">{error}</Text>
+            <Pressable onPress={fetchNews} className="flex-row items-center gap-2 bg-primary-500 px-5 py-2.5 rounded-xl mt-3">
+              <RefreshCw color="white" size={16} />
+              <Text className="text-xs font-black uppercase text-white tracking-wider">Retry Feed</Text>
+            </Pressable>
           </View>
         ) : (
           <View className="gap-6">

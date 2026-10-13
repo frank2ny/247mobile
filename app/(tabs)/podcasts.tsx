@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Pressable, Image, Platform } from 'react-native';
-import { Mic, Play, ArrowRight, TrendingUp } from 'lucide-react-native';
+import { Mic, Play } from 'lucide-react-native';
 
 const MOCK_PODCASTS = [
   { id: '1', title: 'The Daily Brief', host: 'Digital TV TZ', category: 'News', duration: '45 min', imageUrl: 'https://images.unsplash.com/photo-1593697821252-0c9137d9fc45?q=80&w=800' },

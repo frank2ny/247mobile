@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, Pressable, ActivityIndicator, Dimensions, Linking, Share } from 'react-native';
+import { View, Text, ScrollView, Image, Pressable, ActivityIndicator, useWindowDimensions, Linking, Share } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Share2, User, Calendar, ExternalLink } from 'lucide-react-native';
 import RenderHtml from 'react-native-render-html';
 
 const API_BASE = 'https://247digitaltvtz.co.tz/wp/wp-json/wp/v2';
-const { width } = Dimensions.get('window');
 
 export default function NewsDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { width, height } = useWindowDimensions();
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,6 +59,14 @@ export default function NewsDetailScreen() {
     li: { fontSize: 16, lineHeight: 26, color: '#333' }
   };
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/news' as any);
+    }
+  };
+
   if (loading) {
     return (
       <View className="flex-1 bg-white items-center justify-center">
@@ -67,7 +75,19 @@ export default function NewsDetailScreen() {
     );
   }
 
-  if (!post) return null;
+  if (!post) {
+    return (
+      <View className="flex-1 bg-white items-center justify-center px-6">
+        <Stack.Screen options={{ headerShown: false }} />
+        <Text className="text-xl font-black text-text-main mb-2">Article Not Found</Text>
+        <Text className="text-xs text-text-muted text-center mb-6">The requested news post could not be loaded or is unavailable.</Text>
+        <Pressable onPress={handleBack} className="bg-primary-500 px-6 py-3 rounded-2xl flex-row items-center gap-2">
+          <ArrowLeft color="white" size={18} />
+          <Text className="text-white text-xs font-black uppercase tracking-wider">Back to News</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white">
@@ -75,7 +95,7 @@ export default function NewsDetailScreen() {
       
       {/* Fixed Header Controls */}
       <View className="absolute top-0 left-0 right-0 z-[100] flex-row justify-between items-center px-6" style={{ paddingTop: 60 }}>
-        <Pressable onPress={() => router.back()} className="w-12 h-12 rounded-2xl bg-[#00000050] items-center justify-center border border-white/20">
+        <Pressable onPress={handleBack} className="w-12 h-12 rounded-2xl bg-[#00000050] items-center justify-center border border-white/20">
           <ArrowLeft color="white" size={24} />
         </Pressable>
         <Pressable onPress={handleShare} className="w-12 h-12 rounded-2xl bg-primary-500/90 items-center justify-center border border-primary-500/30 shadow-lg">
@@ -85,7 +105,7 @@ export default function NewsDetailScreen() {
 
       <ScrollView bounces={false} className="flex-1">
         {/* Immersive Hero Header */}
-        <View className="w-full" style={{ height: Dimensions.get('window').height * 0.6 }}>
+        <View className="w-full" style={{ height: height * 0.6 }}>
           <Image source={{ uri: post.imageUrl }} className="w-full h-full absolute inset-0" />
           <View className="absolute inset-0 bg-black/40" />
 

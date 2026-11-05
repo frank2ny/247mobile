@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl, Share, Linking, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Share, Linking, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { Tv, Share2, Play, RefreshCw } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CHANNEL_HANDLE = '@Digitaltvtz-p5p';
 const CHANNEL_ID = 'UCuAnKqEQtc7v1-uvXhLmhyg';
@@ -44,6 +46,7 @@ const FALLBACK_VIDEOS: YouTubeVideo[] = [
 ];
 
 export default function TVScreen() {
+  const insets = useSafeAreaInsets();
   const [videos, setVideos] = useState<YouTubeVideo[]>(FALLBACK_VIDEOS);
   const [selectedVideo, setSelectedVideo] = useState<YouTubeVideo>(FALLBACK_VIDEOS[0]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +121,7 @@ export default function TVScreen() {
       {/* Fixed Dark Header (matching Home & News tabs) */}
       <View 
         className="absolute top-0 left-0 right-0 z-50 bg-[#0a0a0a] px-6 py-4 border-b border-white/5" 
-        style={Platform.OS === 'ios' ? { paddingTop: 50 } : { paddingTop: 40 }}
+        style={{ paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 50 : 38) }}
       >
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-3">
@@ -138,7 +141,7 @@ export default function TVScreen() {
 
           <Pressable 
             onPress={openYouTubeChannel}
-            className="flex-row items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/20 border border-red-500/30"
+            className="flex-row items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/20 border border-red-500/30 active:scale-95"
           >
             <Tv color="#ef4444" size={14} />
             <Text className="text-[9px] font-black text-red-500 uppercase tracking-wider">Subscribe</Text>
@@ -148,7 +151,10 @@ export default function TVScreen() {
 
       <ScrollView 
         className="flex-1 px-6" 
-        contentContainerStyle={{ paddingTop: 130, paddingBottom: 150 }}
+        contentContainerStyle={{ 
+          paddingTop: Math.max(insets.top, 40) + 76, 
+          paddingBottom: 150 
+        }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" colors={['#f97316']} />
         }

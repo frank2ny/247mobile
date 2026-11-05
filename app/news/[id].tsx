@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, Pressable, ActivityIndicator, useWindowDimensions, Linking, Share } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, useWindowDimensions, Linking, Share } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Share2, User, Calendar, ExternalLink } from 'lucide-react-native';
 import RenderHtml from 'react-native-render-html';

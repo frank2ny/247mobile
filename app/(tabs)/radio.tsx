@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, ScrollView, Pressable, ActivityIndicator, StyleSheet, Animated } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet, Animated, Share, Linking } from 'react-native';
+import { Image } from 'expo-image';
 import { Play, Pause, ChevronDown, Bell, Share2, Calendar, Clock, Menu, Globe } from 'lucide-react-native';
 import { usePlayer } from '../../context/PlayerContext';
 import { useRouter } from 'expo-router';
@@ -44,6 +45,25 @@ export default function RadioScreen() {
     ]).start();
   }, [isPlaying, btnScale, discScale]);
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `Listening to ${currentTrack?.title} on 247 Digital Swahili Radio! Listen live: https://247digitaltvtz.co.tz`,
+        title: currentTrack?.title || '247 Digital Radio',
+      });
+    } catch (err) {
+      console.warn('Share error:', err);
+    }
+  };
+
   if (!currentTrack) return null;
 
   return (
@@ -51,7 +71,7 @@ export default function RadioScreen() {
       {/* Fixed Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable onPress={handleBack} style={styles.backButton}>
             <ChevronDown color="white" size={24} />
           </Pressable>
           
@@ -72,7 +92,10 @@ export default function RadioScreen() {
             ))}
           </View>
 
-          <Pressable style={styles.backButton}>
+          <Pressable 
+            onPress={() => router.push('/notifications')} 
+            style={styles.backButton}
+          >
             <Bell color="white" size={20} />
           </Pressable>
         </View>
@@ -83,7 +106,7 @@ export default function RadioScreen() {
           {/* Disc Section — shrinks when playing */}
           <Animated.View style={[styles.discWrapper, { transform: [{ scale: discScale }] }]}>
              <View style={styles.discContainer}>
-               <Image source={{ uri: currentTrack.cover }} style={styles.discImage} />
+               <Image source={{ uri: currentTrack.cover }} style={styles.discImage} contentFit="cover" />
                {isPlaying && <View style={styles.discPulsingRing} />}
              </View>
           </Animated.View>
@@ -102,8 +125,8 @@ export default function RadioScreen() {
 
           {/* Controls — slightly smaller when playing */}
           <Animated.View style={[styles.controlsRow, { transform: [{ scale: btnScale }] }]}>
-            <Pressable style={styles.controlBtnSmall}>
-              <Share2 color="rgba(255,255,255,0.4)" size={24} />
+            <Pressable onPress={handleShare} style={styles.controlBtnSmall}>
+              <Share2 color="rgba(255,255,255,0.7)" size={24} />
             </Pressable>
 
             <Pressable onPress={toggle} style={styles.playBtnLarge}>
@@ -116,8 +139,8 @@ export default function RadioScreen() {
               )}
             </Pressable>
 
-            <Pressable style={styles.controlBtnSmall}>
-              <Menu color="rgba(255,255,255,0.4)" size={24} />
+            <Pressable onPress={() => router.push('/modal')} style={styles.controlBtnSmall}>
+              <Menu color="rgba(255,255,255,0.7)" size={24} />
             </Pressable>
           </Animated.View>
         </View>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Switch, Platform, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, Platform, StyleSheet, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Bell, ArrowLeft, Newspaper, Calendar, Mic, AlertTriangle, Clock, Tv, Radio, Rss, Volume2 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -86,7 +86,10 @@ export default function NotificationsScreen() {
 
       {/* ── HEADER ── */}
       <View style={[styles.header, { paddingTop: Platform.OS === 'ios' ? 56 : 36 }]}>
-        <Pressable onPress={() => router.back()} style={styles.headerBtn}>
+        <Pressable 
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} 
+          style={styles.headerBtn}
+        >
           <ArrowLeft color="#ffffff" size={22} />
         </Pressable>
 
@@ -118,7 +121,10 @@ export default function NotificationsScreen() {
               <Text style={styles.permTitle}>PERMISSIONS STATUS</Text>
               <Text style={styles.permSub}>ACTION REQUIRED</Text>
             </View>
-            <Pressable style={styles.enableBtn}>
+            <Pressable 
+              onPress={() => Linking.openSettings()} 
+              style={styles.enableBtn}
+            >
               <Text style={styles.enableBtnText}>ENABLE</Text>
             </Pressable>
           </View>

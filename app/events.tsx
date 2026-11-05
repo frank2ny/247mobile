@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Image, Platform, Share } from 'react-native';
+import { View, Text, ScrollView, Pressable, Platform, Share } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Calendar, MapPin, Share2, Ticket, Sparkles } from 'lucide-react-native';
 
@@ -94,7 +95,7 @@ export default function EventsScreen() {
         style={Platform.OS === 'ios' ? { paddingTop: 54 } : { paddingTop: 40 }}
       >
         <Pressable 
-          onPress={() => router.back()} 
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} 
           className="w-11 h-11 rounded-2xl bg-white/5 items-center justify-center border border-white/10 active:scale-95"
         >
           <ArrowLeft color="white" size={20} />

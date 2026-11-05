@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Share, RefreshControl } from 'react-native';
-import { ArrowLeft, Calendar, Share2, RefreshCw } from 'lucide-react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Share, RefreshControl, Platform } from 'react-native';
+import { Image } from 'expo-image';
+import { ArrowLeft, Calendar, Share2, RefreshCw, Newspaper } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Constants locally defined to avoid import issues until everything is ported
 const API_BASE = 'https://247digitaltvtz.co.tz/wp/wp-json/wp/v2';
@@ -14,6 +16,7 @@ export default function NewsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const fetchNews = useCallback(async () => {
     try {
@@ -70,13 +73,28 @@ export default function NewsScreen() {
     ? news 
     : news.filter(item => item.category === selectedCategory);
 
+  const canGoBack = router.canGoBack();
+  const headerTop = Math.max(insets.top, Platform.OS === 'ios' ? 50 : 38);
+
   return (
     <View className="flex-1 bg-bg-light">
-      <View className="absolute top-0 left-0 right-0 z-50 bg-[#0a0a0a] px-6 py-4 border-b border-white/5" style={{ paddingTop: 50 }}>
+      <View 
+        className="absolute top-0 left-0 right-0 z-50 bg-[#0a0a0a] px-6 py-4 border-b border-white/5" 
+        style={{ paddingTop: headerTop }}
+      >
         <View className="flex-row items-center gap-4">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-xl bg-white/5 items-center justify-center border border-white/10">
-            <ArrowLeft color="white" size={20} />
-          </Pressable>
+          {canGoBack ? (
+            <Pressable 
+              onPress={() => router.back()} 
+              className="w-10 h-10 rounded-xl bg-white/5 items-center justify-center border border-white/10 active:scale-95"
+            >
+              <ArrowLeft color="white" size={20} />
+            </Pressable>
+          ) : (
+            <View className="w-10 h-10 rounded-xl bg-primary-500/15 items-center justify-center border border-primary-500/30">
+              <Newspaper color="#f97316" size={20} />
+            </View>
+          )}
           <View className="flex-1">
             <Text className="text-xl font-black text-white uppercase">Digital <Text className="text-primary-500">Press</Text></Text>
             <Text className="text-[9px] font-black uppercase text-white/40 tracking-widest mt-0.5">Insight Tanzania</Text>
@@ -100,7 +118,7 @@ export default function NewsScreen() {
 
       <ScrollView 
         className="flex-1 px-4" 
-        contentContainerStyle={{ paddingTop: 170, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingTop: headerTop + 115, paddingBottom: 150 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" colors={['#f97316']} />
         }

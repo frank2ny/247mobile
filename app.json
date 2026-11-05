@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.digitaltvtz.app",
-      "versionCode": 12,
+      "versionCode": 13,
       "adaptiveIcon": {
         "backgroundColor": "#0a0a0a",
         "foregroundImage": "./assets/images/crop.jpg",

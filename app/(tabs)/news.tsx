@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Share, RefreshControl } from 'react-native';
-import { ArrowLeft, Calendar, Share2, RefreshCw } from 'lucide-react-native';
+import { Calendar, Share2, RefreshCw } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { APP_NAME } from '../../constants/brand';
+import { htmlToText } from '../../utils/html';
 
 // Constants locally defined to avoid import issues until everything is ported
 const API_BASE = 'https://247digitaltvtz.co.tz/wp/wp-json/wp/v2';
@@ -14,6 +17,7 @@ export default function NewsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const fetchNews = useCallback(async () => {
     try {
@@ -25,8 +29,8 @@ export default function NewsScreen() {
 
       const formatted = data.map((post: any) => ({
         id: post.id,
-        title: post.title.rendered,
-        excerpt: post.excerpt.rendered.replace(/<[^>]*>?/gm, '').substring(0, 80) + '...',
+        title: htmlToText(post.title.rendered),
+        excerpt: htmlToText(post.excerpt.rendered).substring(0, 80) + '...',
         date: new Date(post.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
         imageUrl: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?q=80&w=800',
         link: post.link,
@@ -72,15 +76,10 @@ export default function NewsScreen() {
 
   return (
     <View className="flex-1 bg-bg-light">
-      <View className="absolute top-0 left-0 right-0 z-50 bg-[#0a0a0a] px-6 py-4 border-b border-white/5" style={{ paddingTop: 50 }}>
-        <View className="flex-row items-center gap-4">
-          <Pressable onPress={() => router.back()} className="w-10 h-10 rounded-xl bg-white/5 items-center justify-center border border-white/10">
-            <ArrowLeft color="white" size={20} />
-          </Pressable>
-          <View className="flex-1">
-            <Text className="text-xl font-black text-white uppercase">Digital <Text className="text-primary-500">Press</Text></Text>
-            <Text className="text-[9px] font-black uppercase text-white/40 tracking-widest mt-0.5">Insight Tanzania</Text>
-          </View>
+      <View className="bg-[#0a0a0a] px-6 pb-4 border-b border-white/5" style={{ paddingTop: insets.top + 12 }}>
+        <View>
+          <Text className="text-2xl font-black text-white">News</Text>
+          <Text className="text-white/60 text-[12px] font-medium mt-1">{APP_NAME}</Text>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-4 flex-row">
@@ -90,7 +89,7 @@ export default function NewsScreen() {
               onPress={() => setSelectedCategory(cat)}
               className={`px-5 py-2 rounded-xl mr-3 border ${selectedCategory === cat ? 'bg-primary-500 border-primary-500' : 'bg-white/5 border-white/10'}`}
             >
-              <Text className={`text-[10px] font-black uppercase tracking-widest ${selectedCategory === cat ? 'text-white' : 'text-white/60'}`}>
+              <Text className={`text-[11px] font-black uppercase tracking-widest ${selectedCategory === cat ? 'text-white' : 'text-white/60'}`}>
                 {cat}
               </Text>
             </Pressable>
@@ -100,7 +99,7 @@ export default function NewsScreen() {
 
       <ScrollView 
         className="flex-1 px-4" 
-        contentContainerStyle={{ paddingTop: 170, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingTop: 24, paddingBottom: 150 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" colors={['#f97316']} />
         }
@@ -110,7 +109,7 @@ export default function NewsScreen() {
             <ActivityIndicator color="#f97316" size="large" />
           </View>
         ) : error ? (
-          <View className="items-center justify-center py-16 px-6 bg-white rounded-3xl border border-black/5 shadow-sm">
+          <View className="items-center justify-center py-16 px-6 bg-card rounded-3xl border border-black/5 shadow-sm">
             <Text className="text-sm font-bold text-gray-800 text-center mb-2">{error}</Text>
             <Pressable onPress={fetchNews} className="flex-row items-center gap-2 bg-primary-500 px-5 py-2.5 rounded-xl mt-3">
               <RefreshCw color="white" size={16} />
@@ -123,7 +122,7 @@ export default function NewsScreen() {
               <View className="mb-2">
                 <View className="flex-row items-center gap-2 mb-4 px-1">
                   <View className="w-1 h-4 bg-primary-500 rounded-full" />
-                  <Text className="text-[10px] font-black uppercase tracking-[3px] text-text-main">Lead Stories</Text>
+                  <Text className="text-[12px] font-bold uppercase tracking-[1px] text-text-main">Top stories</Text>
                 </View>
                 <ScrollView 
                   horizontal 
@@ -146,11 +145,11 @@ export default function NewsScreen() {
                         {/* Removed Breaking badge */}
 
                         <View className="absolute bottom-8 left-8 right-8">
-                          <Text className="text-primary-500 text-[10px] font-black uppercase tracking-[2px] mb-2">{post.category}</Text>
-                          <Text className="text-xl font-black text-white uppercase tracking-tighter leading-tight mb-4">{post.title}</Text>
+                          <Text className="text-primary-500 text-[11px] font-black uppercase tracking-[1px] mb-2">{post.category}</Text>
+                          <Text className="text-xl font-black text-white tracking-tight leading-tight mb-4" numberOfLines={3}>{post.title}</Text>
                           <View className="flex-row items-center gap-2">
                             <Calendar color="#f97316" size={14} />
-                            <Text className="text-white/80 text-[10px] font-black uppercase tracking-widest">{post.date}</Text>
+                            <Text className="text-white/80 text-[11px] font-black uppercase tracking-widest">{post.date}</Text>
                           </View>
                         </View>
                       </View>
@@ -165,7 +164,7 @@ export default function NewsScreen() {
               <Pressable
                 key={post.id}
                 onPress={() => router.push(`/news/${post.id}`)}
-                className="flex-row gap-4 p-4 rounded-[32px] bg-white border border-black/5"
+                className="flex-row gap-4 p-4 rounded-[32px] bg-card border border-black/5"
               >
                 <View className="w-28 h-28 rounded-2xl overflow-hidden bg-gray-100">
                   <Image source={{ uri: post.imageUrl }} className="w-full h-full" />
@@ -174,15 +173,15 @@ export default function NewsScreen() {
                 <View className="flex-1 justify-between">
                   <View>
                     <View className="flex-row items-center justify-between mb-1">
-                      <Text className="text-[9px] font-black text-primary-500 uppercase tracking-widest">{post.category}</Text>
-                      <Text className="text-[9px] font-black text-black/40 uppercase tracking-widest">{post.date}</Text>
+                      <Text className="text-[11px] font-black text-primary-500 uppercase tracking-widest">{post.category}</Text>
+                      <Text className="text-[11px] font-black text-black/40 uppercase tracking-widest">{post.date}</Text>
                     </View>
-                    <Text className="text-[13px] font-black text-[#0a0a0a] uppercase leading-tight">{post.title}</Text>
+                    <Text className="text-[15px] font-bold text-[#0a0a0a] leading-snug" numberOfLines={3}>{post.title}</Text>
                   </View>
                   
                   <View className="flex-row items-center justify-between mt-2">
-                    <Text className="text-[10px] font-black text-primary-500 uppercase tracking-widest">Full Coverage</Text>
-                    <Pressable onPress={() => handleShare(post)} className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center">
+                    <Text className="text-[13px] font-bold text-primary-500">Read story</Text>
+                    <Pressable onPress={() => handleShare(post)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Share story" className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center">
                       <Share2 color="#0a0a0a" size={14} />
                     </Pressable>
                   </View>

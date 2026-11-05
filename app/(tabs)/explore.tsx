@@ -1,12 +1,14 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable, Image, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { APP_NAME } from '../../constants/brand';
 import { Radio, Tv, Newspaper, Mic, Compass, ChevronRight } from 'lucide-react-native';
 
 const CHANNELS = [
   {
     id: 'c1',
-    title: '247 Digital Radio',
+    title: 'Live radio',
     subtitle: 'Swahili Live Streaming 24/7',
     icon: Radio,
     route: '/radio',
@@ -15,7 +17,7 @@ const CHANNELS = [
   },
   {
     id: 'c2',
-    title: 'Digital TV TZ Live',
+    title: 'Video',
     subtitle: '1080P HD Live Video Stream',
     icon: Tv,
     route: '/tv',
@@ -24,7 +26,7 @@ const CHANNELS = [
   },
   {
     id: 'c3',
-    title: 'Digital Press & News',
+    title: 'News',
     subtitle: 'Latest Tanzania Breaking News',
     icon: Newspaper,
     route: '/news',
@@ -33,7 +35,7 @@ const CHANNELS = [
   },
   {
     id: 'c4',
-    title: 'EduTech & Podcasts',
+    title: 'Podcasts',
     subtitle: 'On-Demand Audio Shows',
     icon: Mic,
     route: '/podcasts',
@@ -44,19 +46,20 @@ const CHANNELS = [
 
 export default function ExploreScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <View className="flex-1 bg-[#0a0a0a]">
       {/* Header */}
       <View 
         className="px-6 py-4 border-b border-white/10 bg-[#0a0a0a] z-50 flex-row items-center justify-between"
-        style={Platform.OS === 'ios' ? { paddingTop: 54 } : { paddingTop: 40 }}
+        style={{ paddingTop: insets.top + 12 }}
       >
         <View>
-          <Text className="text-2xl font-black text-white uppercase tracking-tight">
+          <Text className="text-2xl font-black text-white tracking-tight">
             Explore <Text className="text-primary-500">Channels</Text>
           </Text>
-          <Text className="text-[9px] font-black text-white/40 uppercase tracking-[2px]">Digital Media Directory</Text>
+          <Text className="text-[12px] font-medium text-white/60">{APP_NAME}</Text>
         </View>
 
         <View className="w-11 h-11 rounded-2xl bg-primary-500/10 items-center justify-center border border-primary-500/20">
@@ -92,7 +95,7 @@ export default function ExploreScreen() {
                   </View>
 
                   <View>
-                    <Text className="text-2xl font-black text-white uppercase tracking-tight leading-tight">
+                    <Text className="text-2xl font-black text-white tracking-tight leading-tight">
                       {ch.title}
                     </Text>
                     <Text className="text-xs font-bold text-white/60 mt-1 uppercase tracking-wider">

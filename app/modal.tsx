@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Info, X, Radio, Shield, Heart, Download, CheckCircle, RefreshCw } from 'lucide-react-native';
+import { APP_NAME } from '../constants/brand';
 import { CURRENT_APP_VERSION, checkAppUpdate, openStoreForUpdate, UpdateStatus } from '../utils/updateChecker';
 
 export default function ModalScreen() {
@@ -32,8 +33,8 @@ export default function ModalScreen() {
               <Info color="#f97316" size={20} />
             </View>
             <View>
-              <Text className="text-lg font-black text-white uppercase">About 247 Media</Text>
-              <Text className="text-[9px] font-black text-primary-500 uppercase tracking-widest">Version {CURRENT_APP_VERSION}</Text>
+              <Text className="text-lg font-black text-white">About</Text>
+              <Text className="text-[11px] font-black text-primary-500 uppercase tracking-widest">Version {CURRENT_APP_VERSION}</Text>
             </View>
           </View>
           <Pressable onPress={() => router.back()} className="w-9 h-9 rounded-xl bg-white/5 items-center justify-center">
@@ -47,10 +48,10 @@ export default function ModalScreen() {
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center gap-2.5">
                 <Download color="#f97316" size={18} />
-                <Text className="text-sm font-black text-white uppercase tracking-wider">App Updates</Text>
+                <Text className="text-sm font-black text-white tracking-wider">App Updates</Text>
               </View>
               <View className="px-2.5 py-1 rounded-full bg-primary-500/20 border border-primary-500/30">
-                <Text className="text-[9px] font-black text-primary-500 uppercase tracking-widest">v{CURRENT_APP_VERSION}</Text>
+                <Text className="text-[11px] font-black text-primary-500 uppercase tracking-widest">v{CURRENT_APP_VERSION}</Text>
               </View>
             </View>
 
@@ -60,7 +61,7 @@ export default function ModalScreen() {
                   <Download color="#f97316" size={16} />
                   <Text className="text-xs font-black text-white uppercase">New Version v{updateInfo.latestVersion} Available!</Text>
                 </View>
-                <Text className="text-[10px] text-white/70 font-medium">{updateInfo.releaseNotes}</Text>
+                <Text className="text-[11px] text-white/70 font-medium">{updateInfo.releaseNotes}</Text>
                 <Pressable 
                   onPress={openStoreForUpdate} 
                   className="bg-primary-500 h-10 rounded-xl items-center justify-center mt-1"
@@ -96,7 +97,7 @@ export default function ModalScreen() {
           <View className="p-4 rounded-2xl bg-white/5 border border-white/5 flex-row items-center gap-4">
             <Radio color="#f97316" size={20} />
             <View className="flex-1">
-              <Text className="text-sm font-bold text-white uppercase">247 Swahili Radio</Text>
+              <Text className="text-sm font-bold text-white">247 Swahili Radio</Text>
               <Text className="text-xs text-white/50">High-fidelity Swahili audio broadcast</Text>
             </View>
           </View>
@@ -104,7 +105,7 @@ export default function ModalScreen() {
           <View className="p-4 rounded-2xl bg-white/5 border border-white/5 flex-row items-center gap-4">
             <Shield color="#3b82f6" size={20} />
             <View className="flex-1">
-              <Text className="text-sm font-bold text-white uppercase">Privacy & Encryption</Text>
+              <Text className="text-sm font-bold text-white">Privacy & Encryption</Text>
               <Text className="text-xs text-white/50">Secure local streams & push settings</Text>
             </View>
           </View>
@@ -117,8 +118,8 @@ export default function ModalScreen() {
           <Heart color="#ef4444" size={12} fill="#ef4444" />
           <Text className="text-xs font-bold text-white/40">for Tanzania</Text>
         </View>
-        <Text className="text-[10px] font-bold text-white/20 uppercase tracking-[2px]">
-          Digital TV TZ Media Network • v{CURRENT_APP_VERSION}
+        <Text className="text-[11px] font-bold text-white/20 uppercase tracking-[1px]">
+          {APP_NAME} • v{CURRENT_APP_VERSION}
         </Text>
       </View>
     </View>

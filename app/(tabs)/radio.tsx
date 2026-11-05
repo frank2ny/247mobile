@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, ScrollView, Pressable, ActivityIndicator, StyleSheet, Animated } from 'react-native';
-import { Play, Pause, ChevronDown, Bell, Share2, Calendar, Clock, Menu, Globe } from 'lucide-react-native';
+import { View, Text, Image, ScrollView, Pressable, ActivityIndicator, StyleSheet, Animated, Share, Easing, AccessibilityInfo, useWindowDimensions } from 'react-native';
+import { Play, Pause, Bell, Share2, Calendar, Clock, CalendarDays, Globe } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlayer } from '../../context/PlayerContext';
 import { useRouter } from 'expo-router';
+import { APP_NAME, WEBSITE_URL } from '../../constants/brand';
 
 const MOCK_SCHEDULE = [
   { id: '1', title: 'Morning Drive', host: 'DJ Sky', startTime: '06:00', endTime: '10:00', day: 'Monday', imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=2070&auto=format&fit=crop' },
@@ -20,40 +22,79 @@ type Tab = 'player' | 'schedule' | 'hosts';
 export default function RadioScreen() {
   const { currentTrack, isPlaying, toggle, isBuffering } = usePlayer();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<Tab>('player');
 
-  // Animated disc scale: 1.0 when idle → 0.68 when playing (shrinks player)
-  const discScale = useRef(new Animated.Value(1)).current;
-  // Animated play button scale: 1.0 → 0.82
-  const btnScale = useRef(new Animated.Value(1)).current;
+  const today = new Date()
+    .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+    .toUpperCase();
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `I'm listening to ${APP_NAME} live. Listen here: ${WEBSITE_URL}`,
+        url: WEBSITE_URL,
+        title: APP_NAME,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Disc size scales with the screen so it never pushes into the header or title
+  const { width, height } = useWindowDimensions();
+  const discSize = Math.round(Math.min(width * 0.58, height * 0.3, 260));
+  const ringSize = discSize + 22;
+  const stageSize = Math.round(discSize * 1.3);
+
+  // While playing: an accent arc spins around the disc and two soft waves pulse outward
+  const spin = useRef(new Animated.Value(0)).current;
+  const wave = useRef(new Animated.Value(0)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(discScale, {
-        toValue: isPlaying ? 0.68 : 1,
-        useNativeDriver: true,
-        friction: 8,
-        tension: 60,
-      }),
-      Animated.spring(btnScale, {
-        toValue: isPlaying ? 0.82 : 1,
-        useNativeDriver: true,
-        friction: 8,
-        tension: 60,
-      }),
-    ]).start();
-  }, [isPlaying, btnScale, discScale]);
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
+  const animate = isPlaying && !reduceMotion;
+
+  useEffect(() => {
+    if (!animate) {
+      wave.setValue(0);
+      return;
+    }
+    const spinLoop = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 6000, easing: Easing.linear, useNativeDriver: true }),
+    );
+    const waveLoop = Animated.loop(
+      Animated.timing(wave, { toValue: 1, duration: 2400, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+    );
+    spin.setValue(0);
+    wave.setValue(0);
+    spinLoop.start();
+    waveLoop.start();
+    return () => {
+      spinLoop.stop();
+      waveLoop.stop();
+    };
+  }, [animate, spin, wave]);
+
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const waveB = Animated.modulo(Animated.add(wave, 0.5), 1);
+  const waveStyle = (v: Animated.AnimatedInterpolation<number> | Animated.Value) => ({
+    opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] }),
+    transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.22] }) }],
+  });
 
   if (!currentTrack) return null;
 
   return (
     <View style={styles.container}>
       {/* Fixed Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerContent}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <ChevronDown color="white" size={24} />
-          </Pressable>
           
           <View style={styles.tabContainer}>
             {(['player', 'schedule', 'hosts'] as Tab[]).map((tab) => (
@@ -72,7 +113,12 @@ export default function RadioScreen() {
             ))}
           </View>
 
-          <Pressable style={styles.backButton}>
+          <Pressable
+            onPress={() => router.push('/notifications')}
+            accessibilityRole="button"
+            accessibilityLabel="Notification settings"
+            style={styles.backButton}
+          >
             <Bell color="white" size={20} />
           </Pressable>
         </View>
@@ -80,46 +126,81 @@ export default function RadioScreen() {
 
       {activeTab === 'player' ? (
         <View style={styles.playerContent}>
-          {/* Disc Section — shrinks when playing */}
-          <Animated.View style={[styles.discWrapper, { transform: [{ scale: discScale }] }]}>
-             <View style={styles.discContainer}>
-               <Image source={{ uri: currentTrack.cover }} style={styles.discImage} />
-               {isPlaying && <View style={styles.discPulsingRing} />}
-             </View>
-          </Animated.View>
+          {/* Disc with spinning ring and pulse waves */}
+          <View style={{ width: stageSize, height: stageSize, alignItems: 'center', justifyContent: 'center' }}>
+            {animate && (
+              <>
+                <Animated.View
+                  pointerEvents="none"
+                  style={[styles.wave, { width: discSize, height: discSize, borderRadius: discSize / 2 }, waveStyle(wave)]}
+                />
+                <Animated.View
+                  pointerEvents="none"
+                  style={[styles.wave, { width: discSize, height: discSize, borderRadius: discSize / 2 }, waveStyle(waveB)]}
+                />
+              </>
+            )}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.ring,
+                { width: ringSize, height: ringSize, borderRadius: ringSize / 2 },
+                isPlaying ? styles.ringActive : null,
+                { transform: [{ rotate }] },
+              ]}
+            />
+            <View style={[styles.disc, { width: discSize, height: discSize, borderRadius: discSize / 2 }]}>
+              <Image source={{ uri: currentTrack.cover }} style={styles.discImage} resizeMode="cover" />
+            </View>
+          </View>
 
           {/* Player Info */}
           <View style={styles.playerInfo}>
             <View style={styles.liveBadge}>
               <View style={styles.liveDot} />
-              <Text style={styles.liveText}>Live On Air</Text>
+              <Text style={styles.liveText}>{isPlaying ? 'Live on air' : 'Live'}</Text>
             </View>
             <Text style={styles.trackTitle} adjustsFontSizeToFit numberOfLines={1}>
-               {currentTrack.title}
+              {currentTrack.title}
             </Text>
-            <Text style={styles.artistName}>With {currentTrack.artist}</Text>
+            <Text style={styles.artistName}>{currentTrack.artist}</Text>
           </View>
 
-          {/* Controls — slightly smaller when playing */}
-          <Animated.View style={[styles.controlsRow, { transform: [{ scale: btnScale }] }]}>
-            <Pressable style={styles.controlBtnSmall}>
-              <Share2 color="rgba(255,255,255,0.4)" size={24} />
+          {/* Controls */}
+          <View style={styles.controlsRow}>
+            <Pressable
+              onPress={handleShare}
+              accessibilityRole="button"
+              accessibilityLabel="Share the radio"
+              style={styles.controlBtnSmall}
+            >
+              <Share2 color="rgba(255,255,255,0.8)" size={22} />
             </Pressable>
 
-            <Pressable onPress={toggle} style={styles.playBtnLarge}>
+            <Pressable
+              onPress={toggle}
+              accessibilityRole="button"
+              accessibilityLabel={isPlaying ? 'Pause' : 'Play live radio'}
+              style={({ pressed }) => [styles.playBtnLarge, pressed && { transform: [{ scale: 0.95 }] }]}
+            >
               {isBuffering ? (
                 <ActivityIndicator color="white" size="large" />
               ) : isPlaying ? (
-                <Pause color="white" size={48} />
+                <Pause color="white" fill="white" size={34} />
               ) : (
-                <Play color="white" size={48} style={{ marginLeft: 6 }} />
+                <Play color="white" fill="white" size={34} style={{ marginLeft: 4 }} />
               )}
             </Pressable>
 
-            <Pressable style={styles.controlBtnSmall}>
-              <Menu color="rgba(255,255,255,0.4)" size={24} />
+            <Pressable
+              onPress={() => setActiveTab('schedule')}
+              accessibilityRole="button"
+              accessibilityLabel="Show today's schedule"
+              style={styles.controlBtnSmall}
+            >
+              <CalendarDays color="rgba(255,255,255,0.8)" size={22} />
             </Pressable>
-          </Animated.View>
+          </View>
         </View>
       ) : (
         <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 150 }}>
@@ -132,7 +213,7 @@ export default function RadioScreen() {
                 </View>
                 <View style={styles.dateBadge}>
                   <Calendar color="#f97316" size={16} />
-                  <Text style={styles.dateText}>MON, MAY 11</Text>
+                  <Text style={styles.dateText}>{today}</Text>
                 </View>
               </View>
 
@@ -160,7 +241,7 @@ export default function RadioScreen() {
             <View>
                <View style={[styles.sectionHeader, { justifyContent: 'center' }]}>
                   <View style={{ alignItems: 'center' }}>
-                    <Text style={styles.sectionTitle}>Power Personalities</Text>
+                    <Text style={styles.sectionTitle}>Presenters</Text>
                     <Text style={styles.sectionSubtitle}>Meet the voices</Text>
                   </View>
                </View>
@@ -193,7 +274,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0a0a0a',
   },
   header: {
-    paddingTop: 50,
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
@@ -236,7 +316,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f97316',
   },
   tabText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -248,47 +328,40 @@ const styles = StyleSheet.create({
   playerContent: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 20,
     paddingHorizontal: 32,
-    paddingTop: 32,
     paddingBottom: 110,
   },
-  discWrapper: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    maxHeight: 380,
+  wave: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderColor: '#f97316',
   },
-  discContainer: {
-    aspectRatio: 1,
-    width: '100%',
-    maxWidth: 340,
-    borderRadius: 170,
-    padding: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+  ring: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  ringActive: {
+    borderWidth: 3,
+    borderColor: 'rgba(249,115,22,0.15)',
+    borderTopColor: '#f97316',
+    borderRightColor: '#fb923c',
+  },
+  disc: {
+    overflow: 'hidden',
+    backgroundColor: '#FAF9F6',
+    borderWidth: 4,
+    borderColor: '#1a1a1a',
   },
   discImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 170,
-    borderWidth: 8,
-    borderColor: '#0a0a0a',
-  },
-  discPulsingRing: {
-    position: 'absolute',
-    inset: 0,
-    borderRadius: 170,
-    borderWidth: 2,
-    borderColor: 'rgba(249,115,22,0.3)',
-    margin: 10,
   },
   playerInfo: {
     alignItems: 'center',
     width: '100%',
-    marginTop: 24,
   },
   liveBadge: {
     flexDirection: 'row',
@@ -300,7 +373,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(249,115,22,0.2)',
     borderRadius: 100,
-    marginBottom: 24,
+    marginBottom: 14,
   },
   liveDot: {
     width: 6,
@@ -309,41 +382,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#f97316',
   },
   liveText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
-    letterSpacing: 3,
+    letterSpacing: 1.5,
     color: '#f97316',
   },
   trackTitle: {
-    fontSize: 32,
-    fontWeight: '900',
+    fontSize: 26,
+    fontWeight: '800',
     color: 'white',
-    letterSpacing: -1,
-    textTransform: 'uppercase',
+    letterSpacing: -0.5,
     textAlign: 'center',
-    marginBottom: 12,
-    lineHeight: 36,
+    marginBottom: 6,
+    lineHeight: 32,
   },
   artistName: {
-    fontSize: 10,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 4,
-    color: '#f97316',
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
   },
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    marginTop: 32,
-    marginBottom: 16,
+    maxWidth: 320,
+    marginTop: 8,
   },
   controlBtnSmall: {
-    width: 64,
-    height: 64,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
@@ -351,17 +421,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   playBtnLarge: {
-    width: 112,
-    height: 112,
-    borderRadius: 40,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: '#f97316',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#f97316',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 8,
   },
   scrollContainer: {
     flex: 1,
@@ -378,12 +448,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '900',
     color: 'white',
-    textTransform: 'uppercase',
     letterSpacing: -0.5,
   },
   sectionSubtitle: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 2,
@@ -401,7 +470,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dateText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '900',
     color: 'rgba(255,255,255,0.6)',
   },
@@ -433,7 +502,7 @@ const styles = StyleSheet.create({
   cardTimeText: {
     color: '#f97316',
     fontWeight: '900',
-    fontSize: 10,
+    fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
@@ -441,12 +510,11 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: 'white',
     fontSize: 20,
-    textTransform: 'uppercase',
     marginBottom: 4,
   },
   cardSubtitle: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -488,16 +556,15 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     fontSize: 18,
-    textTransform: 'uppercase',
     letterSpacing: -0.5,
   },
   hostRole: {
     color: '#f97316',
     fontWeight: '900',
     textAlign: 'center',
-    fontSize: 9,
+    fontSize: 11,
     textTransform: 'uppercase',
-    letterSpacing: 3,
+    letterSpacing: 1.5,
     marginTop: 4,
   }
 });

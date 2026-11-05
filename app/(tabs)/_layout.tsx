@@ -10,8 +10,8 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   const activeColor = '#f97316';
-  const inactiveColor = '#9ca3af';
-  const bgColor = '#ffffff';
+  const inactiveColor = '#4b5563';
+  const bgColor = '#FAF9F6';
 
   return (
     <View
@@ -76,6 +76,9 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 >
                   <Pressable
                     onPress={onPress}
+                    accessibilityRole="button"
+                    accessibilityLabel="Live radio"
+                    accessibilityState={{ selected: isFocused }}
                     style={{
                       width: 64,
                       height: 64,
@@ -88,7 +91,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                       elevation: 12,
                       // White ring that separates button from bar
                       borderWidth: 4,
-                      borderColor: '#ffffff',
+                      borderColor: '#FAF9F6',
                     }}
                   >
                     <LinearGradient
@@ -119,17 +122,18 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               <Pressable
                 key={route.key}
                 onPress={onPress}
+                accessibilityRole="button"
+                accessibilityLabel={options.title}
+                accessibilityState={{ selected: isFocused }}
                 style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: '100%' }}
               >
                 <View style={{ alignItems: 'center' }}>
-                  <Icon color={isFocused ? activeColor : inactiveColor} size={22} strokeWidth={isFocused ? 2.5 : 1.8} />
+                  <Icon color={isFocused ? activeColor : inactiveColor} size={24} strokeWidth={isFocused ? 2.75 : 2.25} />
                   <Text
                     style={{
-                      fontSize: 9,
+                      fontSize: 11,
                       marginTop: 4,
-                      fontWeight: isFocused ? '900' : '600',
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.8,
+                      fontWeight: isFocused ? '800' : '600',
                       color: isFocused ? activeColor : inactiveColor,
                     }}
                   >

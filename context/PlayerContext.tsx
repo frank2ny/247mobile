@@ -35,7 +35,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [currentTrack, setCurrentTrack] = useState<AudioState['currentTrack']>({
     id: 'radio-live',
     title: '247 Digital Swahili Radio',
-    artist: 'Live Streaming 24/7',
+    artist: 'Your Daily Connection',
     cover: LOCAL_LOGO_URI,
     url: RADIO_STREAM_URL,
     type: 'radio'

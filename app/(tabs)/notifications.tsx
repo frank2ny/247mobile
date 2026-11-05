@@ -1,36 +1,38 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Switch, Platform, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, StyleSheet, Linking } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { APP_NAME } from '../../constants/brand';
 import { useRouter } from 'expo-router';
 import { Bell, ArrowLeft, Newspaper, Calendar, Mic, AlertTriangle, Clock, Tv, Radio, Rss, Volume2 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
 // ── News Alerts ──
 const NEWS_ITEMS = [
-  { id: 'news_breaking', title: 'BREAKING NEWS', desc: 'Instant push for major breaking stories', icon: Newspaper },
-  { id: 'news_latest', title: 'LATEST UPDATES', desc: 'Hourly top stories delivered to you', icon: Rss },
-  { id: 'news_daily', title: 'DAILY DIGEST', desc: 'Morning summary of overnight news', icon: Clock },
+  { id: 'news_breaking', title: 'Breaking news', desc: 'Instant push for major breaking stories', icon: Newspaper },
+  { id: 'news_latest', title: 'Latest updates', desc: 'Hourly top stories delivered to you', icon: Rss },
+  { id: 'news_daily', title: 'Daily digest', desc: 'Morning summary of overnight news', icon: Clock },
 ];
 
 // ── Radio & Shows ──
 const RADIO_ITEMS = [
-  { id: 'radio_live', title: 'LIVE RADIO START', desc: 'Alert when a live session goes on air', icon: Radio },
-  { id: 'radio_show', title: 'SHOW REMINDERS', desc: 'Notified before your scheduled shows', icon: Volume2 },
+  { id: 'radio_live', title: 'Live radio starts', desc: 'Alert when a live session goes on air', icon: Radio },
+  { id: 'radio_show', title: 'Show reminders', desc: 'Notified before your scheduled shows', icon: Volume2 },
 ];
 
 // ── Podcasts ──
 const PODCAST_ITEMS = [
-  { id: 'pod_new', title: 'NEW EPISODES', desc: 'Fresh episodes from subscribed podcasts', icon: Mic },
+  { id: 'pod_new', title: 'New episodes', desc: 'Fresh episodes from subscribed podcasts', icon: Mic },
 ];
 
 // ── Events ──
 const EVENT_ITEMS = [
-  { id: 'evt_upcoming', title: 'UPCOMING EVENTS', desc: 'Reminders 24 hrs before an event', icon: Calendar },
-  { id: 'evt_live', title: 'LIVE EVENTS', desc: 'Flash announcements & ticket drops', icon: Bell },
+  { id: 'evt_upcoming', title: 'Upcoming events', desc: 'Reminders 24 hrs before an event', icon: Calendar },
+  { id: 'evt_live', title: 'Live events', desc: 'Flash announcements & ticket drops', icon: Bell },
 ];
 
 // ── TV ──
 const TV_ITEMS = [
-  { id: 'tv_program', title: 'PROGRAM ALERTS', desc: 'Alerts for your favourite TV shows', icon: Tv },
+  { id: 'tv_program', title: 'Program alerts', desc: 'Alerts for your favourite TV shows', icon: Tv },
 ];
 
 export default function NotificationsScreen() {
@@ -80,21 +82,23 @@ export default function NotificationsScreen() {
     </View>
   );
 
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
 
       {/* ── HEADER ── */}
-      <View style={[styles.header, { paddingTop: Platform.OS === 'ios' ? 56 : 36 }]}>
-        <Pressable onPress={() => router.back()} style={styles.headerBtn}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" style={styles.headerBtn}>
           <ArrowLeft color="#ffffff" size={22} />
         </Pressable>
 
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>
-            PUSH <Text style={styles.headerTitleOrange}>ALERTS</Text>
+            Notifications
           </Text>
-          <Text style={styles.headerSubtitle}>NOTIFY ME</Text>
+          <Text style={styles.headerSubtitle}>Choose your alerts</Text>
         </View>
 
         <View style={[styles.headerBtn, styles.headerBtnRight]}>
@@ -115,11 +119,11 @@ export default function NotificationsScreen() {
               <AlertTriangle color="#f97316" size={22} strokeWidth={2.5} />
             </View>
             <View style={styles.permTextWrap}>
-              <Text style={styles.permTitle}>PERMISSIONS STATUS</Text>
-              <Text style={styles.permSub}>ACTION REQUIRED</Text>
+              <Text style={styles.permTitle}>Permission</Text>
+              <Text style={styles.permSub}>Allow notifications in settings</Text>
             </View>
-            <Pressable style={styles.enableBtn}>
-              <Text style={styles.enableBtnText}>ENABLE</Text>
+            <Pressable onPress={() => Linking.openSettings()} accessibilityRole="button" accessibilityLabel="Open phone settings" style={styles.enableBtn}>
+              <Text style={styles.enableBtnText}>Open settings</Text>
             </Pressable>
           </View>
 
@@ -127,7 +131,7 @@ export default function NotificationsScreen() {
           <View style={styles.alertBanner}>
             <Text style={styles.alertText}>
               Push notifications are disabled on this device. Go to your phone
-              Settings → Notifications → 247 Digital TV TZ and tap{' '}
+              Settings → Notifications → {APP_NAME} and tap{' '}
               <Text style={{ fontWeight: '900' }}>Allow</Text> to stay updated.
             </Text>
           </View>
@@ -157,7 +161,7 @@ export default function NotificationsScreen() {
         <View style={styles.stayCard}>
           <View style={styles.stayAccent} />
           <View style={styles.stayContent}>
-            <Text style={styles.stayTitle}>STAY CONNECTED</Text>
+            <Text style={styles.stayTitle}>Stay connected</Text>
             <Text style={styles.stayBody}>
               We use localized background push to ensure you never miss a beat.
               Subscriptions are encrypted and private to your device.
@@ -172,7 +176,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F2F0EC',
   },
   /* ── Header ── */
   header: {
@@ -212,10 +216,10 @@ const styles = StyleSheet.create({
     color: '#f97316',
   },
   headerSubtitle: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '700',
     color: 'rgba(255,255,255,0.3)',
-    letterSpacing: 3,
+    letterSpacing: 1.5,
     marginTop: 2,
   },
   /* ── Scroll ── */
@@ -230,7 +234,7 @@ const styles = StyleSheet.create({
   },
   /* ── Permissions Card ── */
   permCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FAF9F6',
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
@@ -265,7 +269,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   permSub: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '700',
     color: '#a3a3a3',
     letterSpacing: 1.5,
@@ -284,7 +288,7 @@ const styles = StyleSheet.create({
   },
   enableBtnText: {
     color: '#ffffff',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1.5,
   },
@@ -301,15 +305,15 @@ const styles = StyleSheet.create({
   },
   /* ── Section label ── */
   sectionLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '900',
     color: '#a3a3a3',
-    letterSpacing: 3,
+    letterSpacing: 1.5,
     paddingHorizontal: 4,
   },
   /* ── Pref Card ── */
   prefCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FAF9F6',
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.06)',
@@ -346,7 +350,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   prefDesc: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '500',
     color: '#a3a3a3',
     lineHeight: 14,

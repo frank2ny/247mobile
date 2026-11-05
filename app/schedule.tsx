@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Image, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { APP_NAME } from '../constants/brand';
 import { ArrowLeft, Clock, Calendar, Radio, Tv, User } from 'lucide-react-native';
 
 interface ShowSchedule {
@@ -23,7 +25,7 @@ const SCHEDULE_DATA: Record<string, ShowSchedule[]> = {
     { id: 'm2', title: 'Top 20 Swahili Countdown', host: 'Mike D', startTime: '10:00', endTime: '13:00', category: 'Music & Hits', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1478737270239-2fccd2cdea8a?q=80&w=800' },
     { id: 'm3', title: 'Digital Prime News TV', host: 'Editorial Desk', startTime: '13:00', endTime: '14:00', category: 'News Bulletin', type: 'tv', imageUrl: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?q=80&w=800' },
     { id: 'm4', title: 'Vibe la Jioni', host: 'Captain Frank', startTime: '14:00', endTime: '18:00', category: 'Afternoon Show', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1520529277867-dbf8c5e0b340?q=80&w=800' },
-    { id: 'm5', title: 'Swahili Cinema Special', host: 'Digital TV Crew', startTime: '18:00', endTime: '21:00', category: 'TV Entertainment', type: 'tv', imageUrl: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=800' },
+    { id: 'm5', title: 'Swahili Cinema Special', host: 'Video Crew', startTime: '18:00', endTime: '21:00', category: 'TV Entertainment', type: 'tv', imageUrl: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=800' },
   ],
   TUE: [
     { id: 't1', title: 'Asubuhi Njema Live', host: 'DJ Sky', startTime: '06:00', endTime: '10:00', category: 'Morning Drive', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=800' },
@@ -50,7 +52,8 @@ const SCHEDULE_DATA: Record<string, ShowSchedule[]> = {
 
 export default function ScheduleScreen() {
   const router = useRouter();
-  const [selectedDay, setSelectedDay] = useState('MON');
+  const insets = useSafeAreaInsets();
+  const [selectedDay, setSelectedDay] = useState(DAYS[(new Date().getDay() + 6) % 7]);
   const [filterType, setFilterType] = useState<'all' | 'radio' | 'tv'>('all');
 
   const rawList = SCHEDULE_DATA[selectedDay] || SCHEDULE_DATA['MON'];
@@ -61,7 +64,7 @@ export default function ScheduleScreen() {
       {/* Top Header */}
       <View 
         className="px-6 py-4 border-b border-white/10 bg-[#0a0a0a] z-50 flex-row items-center justify-between"
-        style={Platform.OS === 'ios' ? { paddingTop: 54 } : { paddingTop: 40 }}
+        style={{ paddingTop: insets.top + 12 }}
       >
         <Pressable 
           onPress={() => router.back()} 
@@ -71,10 +74,10 @@ export default function ScheduleScreen() {
         </Pressable>
 
         <View className="items-center">
-          <Text className="text-lg font-black text-white uppercase tracking-tight">
+          <Text className="text-lg font-black text-white tracking-tight">
             Broadcast <Text className="text-primary-500">Timeline</Text>
           </Text>
-          <Text className="text-[9px] font-black text-white/40 uppercase tracking-[2px]">247 Digital TV TZ</Text>
+          <Text className="text-[12px] font-medium text-white/60">{APP_NAME}</Text>
         </View>
 
         <View className="w-11 h-11 rounded-2xl bg-primary-500/10 items-center justify-center border border-primary-500/20">
@@ -118,7 +121,7 @@ export default function ScheduleScreen() {
             >
               {type === 'radio' && <Radio color={isActive ? '#f97316' : '#9ca3af'} size={14} />}
               {type === 'tv' && <Tv color={isActive ? '#f97316' : '#9ca3af'} size={14} />}
-              <Text className={`text-[10px] font-black uppercase tracking-wider ${isActive ? 'text-primary-500' : 'text-white/50'}`}>
+              <Text className={`text-[11px] font-black uppercase tracking-wider ${isActive ? 'text-primary-500' : 'text-white/50'}`}>
                 {type}
               </Text>
             </Pressable>
@@ -145,8 +148,8 @@ export default function ScheduleScreen() {
                   <Image source={{ uri: show.imageUrl }} className="w-full h-full" />
                   {show.isLive && (
                     <View className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-primary-500 flex-row items-center">
-                      <View className="w-1.5 h-1.5 rounded-full bg-white mr-1" />
-                      <Text className="text-[8px] font-black uppercase text-white tracking-wider">LIVE</Text>
+                      <View className="w-1.5 h-1.5 rounded-full bg-card mr-1" />
+                      <Text className="text-[11px] font-black uppercase text-white tracking-wider">LIVE</Text>
                     </View>
                   )}
                 </View>
@@ -156,28 +159,28 @@ export default function ScheduleScreen() {
                     <View className="flex-row items-center justify-between mb-1">
                       <View className="flex-row items-center gap-1.5">
                         <Clock color="#f97316" size={12} />
-                        <Text className="text-[10px] font-black text-primary-500 tracking-wider">
+                        <Text className="text-[11px] font-black text-primary-500 tracking-wider">
                           {show.startTime} - {show.endTime}
                         </Text>
                       </View>
                       <View className="px-2 py-0.5 rounded-md bg-white/10">
-                        <Text className="text-[8px] font-black uppercase text-white/60 tracking-widest">{show.type}</Text>
+                        <Text className="text-[11px] font-black uppercase text-white/60 tracking-widest">{show.type}</Text>
                       </View>
                     </View>
 
-                    <Text className="text-base font-black text-white uppercase leading-tight mb-1" numberOfLines={1}>
+                    <Text className="text-base font-black text-white leading-tight mb-1" numberOfLines={1}>
                       {show.title}
                     </Text>
 
                     <View className="flex-row items-center gap-1">
                       <User color="rgba(255,255,255,0.4)" size={12} />
-                      <Text className="text-[10px] font-bold text-white/50 uppercase tracking-wide">
+                      <Text className="text-[11px] font-bold text-white/50 uppercase tracking-wide">
                         w/ {show.host}
                       </Text>
                     </View>
                   </View>
 
-                  <Text className="text-[9px] font-bold text-primary-500/80 uppercase tracking-widest mt-2">
+                  <Text className="text-[11px] font-bold text-primary-500/80 uppercase tracking-widest mt-2">
                     {show.category}
                   </Text>
                 </View>

@@ -1,67 +1,97 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
-import { Info, Calendar, Mail, Phone, MessageSquare, ArrowRight, Globe, Users, Share2 } from 'lucide-react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Linking } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Calendar, Mail, Phone, MessageSquare, ChevronRight, Globe, Tv, Bell, Info, SquarePlay } from 'lucide-react-native';
+import { APP_NAME, CONTACT, WEBSITE_URL, YOUTUBE_URL } from '../../constants/brand';
 
-const MENU_ITEMS = [
-  { icon: Calendar, title: 'UPCOMING EVENTS', desc: 'Tickets, concerts and festivals' },
-  { icon: Mail, title: 'EMAIL SUPPORT', desc: 'Fast response via email' },
-  { icon: Phone, title: 'CALL CENTER', desc: 'Talk to an agent directly' },
-  { icon: MessageSquare, title: 'WHATSAPP CHAT', desc: 'Quick chat on WhatsApp' }
-];
+type MenuItem = {
+  key: string;
+  icon: React.ComponentType<{ color?: string; size?: number }>;
+  title: string;
+  desc: string;
+  onPress: () => void;
+};
 
-export default function SupportScreen() {
+export default function MoreScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const go = (href: Href) => () => router.push(href);
+
+  const browseItems: MenuItem[] = [
+    { key: 'events', icon: Calendar, title: 'Events', desc: 'Concerts, festivals and tickets', onPress: go('/events') },
+    { key: 'tv', icon: Tv, title: 'Video', desc: 'Latest videos from our YouTube channel', onPress: go('/tv') },
+    { key: 'notifications', icon: Bell, title: 'Notifications', desc: 'Choose which alerts you get', onPress: go('/notifications') },
+    { key: 'about', icon: Info, title: 'About & updates', desc: 'App version and update check', onPress: go('/modal') },
+  ];
+
+  // Contact rows only appear once a value is set in constants/brand.ts
+  const contactItems: MenuItem[] = [
+    CONTACT.email && { key: 'email', icon: Mail, title: 'Email us', desc: CONTACT.email, onPress: () => Linking.openURL(`mailto:${CONTACT.email}`) },
+    CONTACT.phone && { key: 'phone', icon: Phone, title: 'Call us', desc: `+${CONTACT.phone}`, onPress: () => Linking.openURL(`tel:+${CONTACT.phone}`) },
+    CONTACT.whatsapp && { key: 'whatsapp', icon: MessageSquare, title: 'WhatsApp', desc: 'Chat with the studio', onPress: () => Linking.openURL(`https://wa.me/${CONTACT.whatsapp}`) },
+  ].filter(Boolean) as MenuItem[];
+
+  const renderItem = (item: MenuItem) => (
+    <Pressable
+      key={item.key}
+      onPress={item.onPress}
+      accessibilityRole="button"
+      accessibilityLabel={item.title}
+      style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+    >
+      <View style={styles.menuIconContainer}>
+        <item.icon color="#f97316" size={22} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.menuTitle}>{item.title}</Text>
+        <Text style={styles.menuDesc}>{item.desc}</Text>
+      </View>
+      <ChevronRight color="#9ca3af" size={20} />
+    </Pressable>
+  );
+
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 150 }}>
-        {/* Header Section */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingTop: insets.top + 24, paddingBottom: 150 }}
+      >
         <View style={styles.header}>
-          <View style={styles.iconCircle}>
-            <Info color="white" size={32} />
-          </View>
-          
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={styles.titleText}>Need </Text>
-            <Text style={[styles.titleText, { color: '#f97316' }]}>Help?</Text>
-          </View>
-          
-          <Text style={styles.subtitleText}>
-            Our dedicated support team is here to assist you 24/7 with any inquiries.
-          </Text>
+          <Text style={styles.titleText}>More</Text>
+          <Text style={styles.subtitleText}>{APP_NAME}</Text>
         </View>
 
-        {/* Menu Items */}
-        <View style={{ gap: 20, marginBottom: 48 }}>
-          {MENU_ITEMS.map((item, idx) => (
-            <Pressable 
-              key={idx} 
-              style={styles.menuItem}
-            >
-               <View style={styles.menuIconContainer}>
-                  <item.icon color="#f97316" size={24} />
-               </View>
-               <View style={{ flex: 1 }}>
-                  <Text style={styles.menuTitle}>{item.title}</Text>
-                  <Text style={styles.menuDesc}>{item.desc}</Text>
-               </View>
-               <ArrowRight color="#9ca3af" size={20} />
-            </Pressable>
-          ))}
-        </View>
+        <View style={styles.group}>{browseItems.map(renderItem)}</View>
 
-        {/* Social Follow */}
-        <View style={{ alignItems: 'center', marginBottom: 40 }}>
-          <Text style={styles.followText}>Follow Us</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
-            <Pressable style={styles.socialBtn}>
-              <Globe color="#374151" size={24} />
-            </Pressable>
-            <Pressable style={styles.socialBtn}>
-              <Share2 color="#374151" size={24} />
-            </Pressable>
-            <Pressable style={styles.socialBtn}>
-              <Users color="#374151" size={24} />
-            </Pressable>
-          </View>
+        {contactItems.length > 0 && (
+          <>
+            <Text style={styles.groupLabel}>Contact</Text>
+            <View style={styles.group}>{contactItems.map(renderItem)}</View>
+          </>
+        )}
+
+        <Text style={styles.groupLabel}>Follow us</Text>
+        <View style={{ flexDirection: 'row', gap: 16 }}>
+          <Pressable
+            onPress={() => Linking.openURL(WEBSITE_URL)}
+            accessibilityRole="link"
+            accessibilityLabel="Open our website"
+            style={styles.socialBtn}
+          >
+            <Globe color="#374151" size={22} />
+            <Text style={styles.socialText}>Website</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => Linking.openURL(YOUTUBE_URL)}
+            accessibilityRole="link"
+            accessibilityLabel="Open our YouTube channel"
+            style={styles.socialBtn}
+          >
+            <SquarePlay color="#374151" size={22} />
+            <Text style={styles.socialText}>YouTube</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </View>
@@ -71,103 +101,83 @@ export default function SupportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F2F0EC',
   },
   scrollView: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 80,
   },
   header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#f97316',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#f97316',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
     marginBottom: 24,
   },
   titleText: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '900',
     color: '#171717',
-    textTransform: 'uppercase',
     letterSpacing: -0.5,
   },
   subtitleText: {
-    textAlign: 'center',
     color: '#737373',
-    marginTop: 12,
-    paddingHorizontal: 16,
-    lineHeight: 24,
-    fontSize: 13,
+    marginTop: 4,
+    fontSize: 14,
     fontWeight: '500',
+  },
+  group: {
+    gap: 12,
+    marginBottom: 32,
+  },
+  groupLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: '#737373',
+    marginBottom: 12,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 32,
-    backgroundColor: 'white',
+    padding: 14,
+    borderRadius: 20,
+    backgroundColor: '#FAF9F6',
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.05)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
   },
   menuIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: 'rgba(249,115,22,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 20,
+    marginRight: 16,
   },
   menuTitle: {
-    fontSize: 14,
-    fontWeight: '900',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#171717',
-    textTransform: 'uppercase',
   },
   menuDesc: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#737373',
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: '500',
   },
-  followText: {
-    fontSize: 10,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 3,
-    color: '#737373',
-    marginBottom: 24,
-  },
   socialBtn: {
-    width: 56,
-    height: 56,
-    backgroundColor: 'white',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 10,
+    height: 52,
+    backgroundColor: '#FAF9F6',
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.05)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  }
+  },
+  socialText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#374151',
+  },
 });

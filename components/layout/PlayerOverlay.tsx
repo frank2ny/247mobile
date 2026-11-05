@@ -57,7 +57,7 @@ export const PlayerOverlay = () => {
           style={{ opacity: tooltipOpacity }}
           className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-lg mr-4 border border-white/10"
         >
-          <Text className="text-[10px] uppercase tracking-[1px] font-bold text-primary-500 leading-none">On Air</Text>
+          <Text className="text-[11px] uppercase tracking-[1px] font-bold text-primary-500 leading-none">On Air</Text>
           <Text className="text-xs font-semibold text-white">{currentTrack.artist}</Text>
         </Animated.View>
       )}

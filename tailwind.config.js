@@ -6,8 +6,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#F8F9FA',
-        'bg-light': '#F8F9FA',
+        background: '#F2F0EC',
+        'bg-light': '#F2F0EC',
+        card: '#FAF9F6',
         'brand-dark': '#0a0a0a',
         'text-main': '#171717',
         'text-muted': '#737373',

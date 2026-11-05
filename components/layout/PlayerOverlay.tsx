@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Animated } from 'react-native';
 import { Play, Pause } from 'lucide-react-native';
 import { usePlayer } from '../../context/PlayerContext';
-import { usePathname } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const PlayerOverlay = () => {
   const { isPlaying, currentTrack, toggle, isBuffering } = usePlayer();
@@ -47,18 +48,32 @@ export const PlayerOverlay = () => {
     };
   }, [isPlaying, tooltipOpacity]);
 
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   // Hide overlay on the main radio/player page
   if (!currentTrack || pathname === '/radio') return null;
 
+  const bottomOffset = 56 + Math.max(insets.bottom, 8) + 14;
+
   return (
-    <View pointerEvents="box-none" className="absolute bottom-[90px] right-6 z-[100] flex-row items-center">
+    <View 
+      pointerEvents="box-none" 
+      style={{ bottom: bottomOffset }}
+      className="absolute right-5 z-[100] flex-row items-center"
+    >
       {showTooltip && (
         <Animated.View
           style={{ opacity: tooltipOpacity }}
-          className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-lg mr-4 border border-white/10"
+          className="bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-xl mr-3 border border-white/10 shadow-lg"
         >
-          <Text className="text-[11px] uppercase tracking-[1px] font-bold text-primary-500 leading-none">On Air</Text>
-          <Text className="text-xs font-semibold text-white">{currentTrack.artist}</Text>
+          <Pressable onPress={() => router.push('/radio')} className="active:opacity-80">
+            <View className="flex-row items-center gap-1.5 mb-0.5">
+              <View className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+              <Text className="text-[11px] uppercase tracking-[1px] font-black text-primary-500 leading-none">On Air</Text>
+            </View>
+            <Text className="text-xs font-bold text-white" numberOfLines={1}>{currentTrack.artist}</Text>
+          </Pressable>
         </Animated.View>
       )}
 
@@ -69,14 +84,15 @@ export const PlayerOverlay = () => {
 
         <Pressable
           onPress={toggle}
-          className="w-16 h-16 rounded-full bg-primary-500 shadow-2xl border-2 border-white/20 items-center justify-center active:scale-95"
+          onLongPress={() => router.push('/radio')}
+          className="w-14 h-14 rounded-full bg-primary-500 shadow-2xl border-2 border-white/20 items-center justify-center active:scale-95"
         >
           {isBuffering ? (
             <ActivityIndicator color="white" size="small" />
           ) : isPlaying ? (
-            <Pause color="white" size={28} />
+            <Pause color="white" size={24} />
           ) : (
-            <Play color="white" size={28} style={{ marginLeft: 4 }} />
+            <Play color="white" size={24} style={{ marginLeft: 3 }} />
           )}
         </Pressable>
       </View>

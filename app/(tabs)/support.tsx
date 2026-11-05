@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Linking } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Share } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, Mail, Phone, MessageSquare, ChevronRight, Globe, Tv, Bell, Info, SquarePlay } from 'lucide-react-native';
+import { Calendar, Mail, Phone, MessageSquare, ChevronRight, Globe, Tv, Bell, Info, SquarePlay, Shield, Share2 } from 'lucide-react-native';
 import { APP_NAME, CONTACT, WEBSITE_URL, YOUTUBE_URL } from '../../constants/brand';
+import { openPrivacyPolicy, CURRENT_APP_VERSION } from '../../utils/updateChecker';
 
 type MenuItem = {
   key: string;
@@ -23,14 +24,16 @@ export default function MoreScreen() {
     { key: 'events', icon: Calendar, title: 'Events', desc: 'Concerts, festivals and tickets', onPress: go('/events') },
     { key: 'tv', icon: Tv, title: 'Video', desc: 'Latest videos from our YouTube channel', onPress: go('/tv') },
     { key: 'notifications', icon: Bell, title: 'Notifications', desc: 'Choose which alerts you get', onPress: go('/notifications') },
-    { key: 'about', icon: Info, title: 'About & updates', desc: 'App version and update check', onPress: go('/modal') },
+    { key: 'share', icon: Share2, title: 'Share the app', desc: 'Tell friends about the station', onPress: () => { Share.share({ message: `Listen to ${APP_NAME} live: ${WEBSITE_URL}`, title: APP_NAME }).catch(() => {}); } },
+    { key: 'privacy', icon: Shield, title: 'Privacy policy', desc: 'How we handle your data', onPress: openPrivacyPolicy },
+    { key: 'about', icon: Info, title: 'About & updates', desc: `Version ${CURRENT_APP_VERSION}`, onPress: go('/modal') },
   ];
 
   // Contact rows only appear once a value is set in constants/brand.ts
   const contactItems: MenuItem[] = [
-    CONTACT.email && { key: 'email', icon: Mail, title: 'Email us', desc: CONTACT.email, onPress: () => Linking.openURL(`mailto:${CONTACT.email}`) },
+    CONTACT.email && { key: 'email', icon: Mail, title: 'Email us', desc: CONTACT.email, onPress: () => Linking.openURL(`mailto:${CONTACT.email}?subject=${encodeURIComponent('247 Digital app support')}`) },
     CONTACT.phone && { key: 'phone', icon: Phone, title: 'Call us', desc: `+${CONTACT.phone}`, onPress: () => Linking.openURL(`tel:+${CONTACT.phone}`) },
-    CONTACT.whatsapp && { key: 'whatsapp', icon: MessageSquare, title: 'WhatsApp', desc: 'Chat with the studio', onPress: () => Linking.openURL(`https://wa.me/${CONTACT.whatsapp}`) },
+    CONTACT.whatsapp && { key: 'whatsapp', icon: MessageSquare, title: 'WhatsApp', desc: 'Chat with the studio', onPress: () => Linking.openURL(`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent('Habari 247 Digital')}`) },
   ].filter(Boolean) as MenuItem[];
 
   const renderItem = (item: MenuItem) => (

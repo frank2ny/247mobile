@@ -12,7 +12,7 @@ export const YOUTUBE_URL = 'https://www.youtube.com/@Digitaltvtz-p5p';
  * phone and whatsapp use international format without spaces, e.g. '255712345678'.
  */
 export const CONTACT = {
-  email: '',
-  phone: '',
-  whatsapp: '',
+  email: 'info@247digitaltvtz.co.tz',
+  phone: '255745247247',
+  whatsapp: '255745247247',
 };

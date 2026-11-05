@@ -9,7 +9,7 @@ import { APP_NAME } from '../../constants/brand';
 const FEATURED_EVENTS = [
   {
     id: 'e1',
-    title: 'Summer Music Festival 2024',
+    title: 'Summer Music Festival 2026',
     date: '15 AUG',
     location: 'Dar es Salaam',
     imageUrl: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=800',
@@ -26,8 +26,9 @@ const FEATURED_EVENTS = [
 ];
 
 const MOCK_SHOWS = [
-  { id: '1', title: 'Morning Drive', startTime: '06:00', imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=2070' },
-  { id: '2', title: 'Midday Mix', startTime: '10:00', imageUrl: 'https://images.unsplash.com/photo-1478737270239-2fccd2cdea8a?q=80&w=2070' },
+  { id: '1', title: 'Asubuhi Njema Live', startTime: '06:00', imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=800' },
+  { id: '2', title: 'Top 20 Swahili Hits', startTime: '10:00', imageUrl: 'https://images.unsplash.com/photo-1478737270239-2fccd2cdea8a?q=80&w=800' },
+  { id: '3', title: 'Vibe la Jioni', startTime: '14:00', imageUrl: 'https://images.unsplash.com/photo-1520529277867-dbf8c5e0b340?q=80&w=800' },
 ];
 
 export default function HomeScreen() {

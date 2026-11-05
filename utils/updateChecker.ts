@@ -1,11 +1,12 @@
 import Constants from 'expo-constants';
 import { Platform, Linking } from 'react-native';
 
-export const CURRENT_APP_VERSION = Constants.expoConfig?.version || '1.0.6';
+export const CURRENT_APP_VERSION = Constants.expoConfig?.version || '1.0.8';
 
-// Store links for 247 Digital Swahili Radio
+// Store links & Privacy Policy for 247 Digital Swahili Radio
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.digitaltvtz.app';
 export const APP_STORE_URL = 'https://apps.apple.com/app/digitaltvtz/id6400000000';
+export const PRIVACY_POLICY_URL = 'https://247digitaltvtz.co.tz/wp/2026/03/29/privacy-policy/';
 
 export interface UpdateStatus {
   hasUpdate: boolean;
@@ -75,4 +76,8 @@ export function isVersionHigher(v1: string, v2: string): boolean {
 export function openStoreForUpdate() {
   const url = Platform.OS === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
   Linking.openURL(url).catch(err => console.error('Could not open store URL:', err));
+}
+
+export function openPrivacyPolicy() {
+  Linking.openURL(PRIVACY_POLICY_URL).catch(err => console.error('Could not open privacy policy URL:', err));
 }

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Info, X, Radio, Shield, Heart, Download, CheckCircle, RefreshCw } from 'lucide-react-native';
+import { Info, X, Radio, Shield, Heart, Download, CheckCircle, RefreshCw, ExternalLink } from 'lucide-react-native';
 import { APP_NAME } from '../constants/brand';
-import { CURRENT_APP_VERSION, checkAppUpdate, openStoreForUpdate, UpdateStatus } from '../utils/updateChecker';
+import { CURRENT_APP_VERSION, checkAppUpdate, openStoreForUpdate, openPrivacyPolicy, UpdateStatus } from '../utils/updateChecker';
 
 export default function ModalScreen() {
   const router = useRouter();
@@ -102,13 +102,19 @@ export default function ModalScreen() {
             </View>
           </View>
 
-          <View className="p-4 rounded-2xl bg-white/5 border border-white/5 flex-row items-center gap-4">
+          <Pressable
+            onPress={openPrivacyPolicy}
+            accessibilityRole="link"
+            accessibilityLabel="Open privacy policy"
+            className="p-4 rounded-2xl bg-white/5 border border-white/5 flex-row items-center gap-4 active:bg-white/10"
+          >
             <Shield color="#3b82f6" size={20} />
             <View className="flex-1">
-              <Text className="text-sm font-bold text-white">Privacy & Encryption</Text>
-              <Text className="text-xs text-white/50">Secure local streams & push settings</Text>
+              <Text className="text-sm font-bold text-white">Privacy policy & terms</Text>
+              <Text className="text-xs text-white/50">How we handle your data</Text>
             </View>
-          </View>
+            <ExternalLink color="rgba(255,255,255,0.4)" size={16} />
+          </Pressable>
         </View>
       </View>
 

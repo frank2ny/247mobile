@@ -90,7 +90,7 @@ export default function NotificationsScreen() {
 
       {/* ── HEADER ── */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" style={styles.headerBtn}>
+        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))} accessibilityRole="button" accessibilityLabel="Back" style={styles.headerBtn}>
           <ArrowLeft color="#ffffff" size={22} />
         </Pressable>
 

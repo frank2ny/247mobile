@@ -67,7 +67,7 @@ export default function ScheduleScreen() {
         style={{ paddingTop: insets.top + 12 }}
       >
         <Pressable 
-          onPress={() => router.back()} 
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))} 
           className="w-11 h-11 rounded-2xl bg-white/5 items-center justify-center border border-white/10 active:scale-95"
         >
           <ArrowLeft color="white" size={20} />

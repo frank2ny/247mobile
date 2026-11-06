@@ -1,197 +1,340 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Share, RefreshControl } from 'react-native';
-import { Calendar, Share2, RefreshCw } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  Pressable,
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  AppState,
+  Animated,
+  Platform,
+  StyleSheet,
+} from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { APP_NAME } from '../../constants/brand';
-import { htmlToText } from '../../utils/html';
+import { ArrowUp, RefreshCw } from 'lucide-react-native';
+import { fetchCategories, fetchPosts, NewsCategory, NewsPost } from '../../lib/news';
+import { LeadStory, NewsSkeleton, RowSeparator, StoryPreviewSheet, StoryRow } from '../../components/news/NewsCards';
 
-// Constants locally defined to avoid import issues until everything is ported
-const API_BASE = 'https://247digitaltvtz.co.tz/wp/wp-json/wp/v2';
+const PAGE_SIZE = 12;
+const CHECK_EVERY_MS = 90_000; // look for new stories every 90 s while the tab is open
+const ALL = 'all';
+
+type FeedState = { posts: NewsPost[]; page: number; totalPages: number };
 
 export default function NewsScreen() {
-  const [news, setNews] = useState<any[]>([]);
-  const [categories, setCategories] = useState<string[]>(['All']);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const listRef = useRef<FlatList<NewsPost>>(null);
 
-  const fetchNews = useCallback(async () => {
-    try {
+  const [categories, setCategories] = useState<NewsCategory[]>([]);
+  const [activeCat, setActiveCat] = useState<number | typeof ALL>(ALL);
+  const [feed, setFeed] = useState<FeedState>({ posts: [], page: 0, totalPages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [freshPosts, setFreshPosts] = useState<NewsPost[]>([]);
+  const [preview, setPreview] = useState<NewsPost | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  // Per-category cache so switching chips is instant
+  const cacheRef = useRef(new Map<string, FeedState>());
+  const feedRef = useRef(feed);
+  useEffect(() => {
+    feedRef.current = feed;
+  }, [feed]);
+  const catKey = String(activeCat);
+  const categoryId = activeCat === ALL ? null : activeCat;
+
+  const loadFirstPage = useCallback(
+    async (mode: 'initial' | 'refresh') => {
+      if (mode === 'initial') setLoading(true);
+      else setRefreshing(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/posts?_embed&per_page=15`);
-      if (!res.ok) throw new Error('Failed to load news posts');
-      const data = await res.json();
-      if (!Array.isArray(data)) throw new Error('Invalid response format');
+      try {
+        const { posts, totalPages } = await fetchPosts({ page: 1, perPage: PAGE_SIZE, categoryId });
+        const next = { posts, page: 1, totalPages };
+        cacheRef.current.set(catKey, next);
+        setFeed(next);
+        setFreshPosts([]);
+        setNow(Date.now());
+      } catch (e: any) {
+        setError(e?.message ?? 'Could not load news.');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [catKey, categoryId],
+  );
 
-      const formatted = data.map((post: any) => ({
-        id: post.id,
-        title: htmlToText(post.title.rendered),
-        excerpt: htmlToText(post.excerpt.rendered).substring(0, 80) + '...',
-        date: new Date(post.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-        imageUrl: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?q=80&w=800',
-        link: post.link,
-        category: post._embedded?.['wp:term']?.[0]?.[0]?.name || 'News'
-      }));
-      
-      const uniqueCats = Array.from(new Set(formatted.map((item: any) => item.category))) as string[];
-      setCategories(['All', ...uniqueCats]);
-      setNews(formatted);
-    } catch (err: any) {
-      console.error('Failed to fetch news:', err);
-      setError(err.message || 'Unable to connect to news server.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  // Categories once
+  useEffect(() => {
+    fetchCategories().then(setCategories).catch(() => {});
   }, []);
 
+  // Load (or restore) the feed when the category changes
   useEffect(() => {
-    fetchNews();
-  }, [fetchNews]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchNews();
-  }, [fetchNews]);
-
-  const handleShare = async (post: any) => {
-    try {
-      await Share.share({
-        message: `${post.title} - Read more: ${post.link}`,
-        url: post.link,
-        title: post.title,
-      });
-    } catch (err) {
-      console.error(err);
+    const cached = cacheRef.current.get(catKey);
+    if (cached) {
+      setFeed(cached);
+      setLoading(false);
+      setError(null);
+    } else {
+      setFeed({ posts: [], page: 0, totalPages: 1 });
+      loadFirstPage('initial');
     }
-  };
+    setFreshPosts([]);
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [catKey, loadFirstPage]);
 
-  const filteredNews = selectedCategory === 'All' 
-    ? news 
-    : news.filter(item => item.category === selectedCategory);
+  const loadMore = useCallback(async () => {
+    const f = feedRef.current;
+    if (loadingMore || loading || f.page === 0 || f.page >= f.totalPages) return;
+    setLoadingMore(true);
+    try {
+      const { posts, totalPages } = await fetchPosts({ page: f.page + 1, perPage: PAGE_SIZE, categoryId });
+      const known = new Set(f.posts.map((p) => p.id));
+      const next = {
+        posts: [...f.posts, ...posts.filter((p) => !known.has(p.id))],
+        page: f.page + 1,
+        totalPages,
+      };
+      cacheRef.current.set(catKey, next);
+      setFeed(next);
+    } catch {
+      // keep what we have; the user can scroll again to retry
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [catKey, categoryId, loading, loadingMore]);
+
+  // Quietly check for stories newer than the top one
+  const checkForNew = useCallback(async () => {
+    const top = feedRef.current.posts[0];
+    setNow(Date.now());
+    if (!top) return;
+    try {
+      const { posts } = await fetchPosts({ page: 1, perPage: 6, categoryId });
+      const known = new Set(feedRef.current.posts.map((p) => p.id));
+      const fresh = posts.filter((p) => !known.has(p.id) && p.dateGmt > top.dateGmt);
+      if (fresh.length) setFreshPosts(fresh);
+    } catch {
+      // offline: try again next tick
+    }
+  }, [categoryId]);
+
+  // Poll while the tab is focused, and check when the app comes back to the foreground
+  useFocusEffect(
+    useCallback(() => {
+      checkForNew();
+      const timer = setInterval(checkForNew, CHECK_EVERY_MS);
+      const sub = AppState.addEventListener('change', (s) => s === 'active' && checkForNew());
+      return () => {
+        clearInterval(timer);
+        sub.remove();
+      };
+    }, [checkForNew]),
+  );
+
+  const showFresh = useCallback(() => {
+    setFeed((f) => {
+      const next = { ...f, posts: [...freshPosts, ...f.posts] };
+      cacheRef.current.set(catKey, next);
+      return next;
+    });
+    setFreshPosts([]);
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, [catKey, freshPosts]);
+
+  const openPost = useCallback((post: NewsPost) => router.push(`/news/${post.id}`), [router]);
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: NewsPost; index: number }) =>
+      index === 0 ? (
+        <LeadStory post={item} now={now} onOpen={openPost} onPreview={setPreview} />
+      ) : (
+        <StoryRow post={item} now={now} onOpen={openPost} onPreview={setPreview} />
+      ),
+    [now, openPost],
+  );
+
+  const today = useMemo(
+    () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
+    [],
+  );
+
+  // "New stories" pill slides in from the top
+  const pill = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.spring(pill, { toValue: freshPosts.length ? 1 : 0, useNativeDriver: true, friction: 8 }).start();
+  }, [freshPosts.length, pill]);
+
+  const chips: { key: string; label: string; value: number | typeof ALL }[] = [
+    { key: ALL, label: 'All', value: ALL },
+    ...categories.map((c) => ({ key: String(c.id), label: c.name, value: c.id })),
+  ];
 
   return (
-    <View className="flex-1 bg-bg-light">
-      <View className="bg-[#0a0a0a] px-6 pb-4 border-b border-white/5" style={{ paddingTop: insets.top + 12 }}>
-        <View>
-          <Text className="text-2xl font-black text-white">News</Text>
-          <Text className="text-white/60 text-[12px] font-medium mt-1">{APP_NAME}</Text>
-        </View>
+    <View style={styles.screen}>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <Text style={styles.date}>{today}</Text>
+        <Text style={styles.title} accessibilityRole="header">
+          News
+        </Text>
+      </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-4 flex-row">
-          {categories.map((cat) => (
-            <Pressable
-              key={cat}
-              onPress={() => setSelectedCategory(cat)}
-              className={`px-5 py-2 rounded-xl mr-3 border ${selectedCategory === cat ? 'bg-primary-500 border-primary-500' : 'bg-white/5 border-white/10'}`}
-            >
-              <Text className={`text-[11px] font-black uppercase tracking-widest ${selectedCategory === cat ? 'text-white' : 'text-white/60'}`}>
-                {cat}
-              </Text>
-            </Pressable>
-          ))}
+      {/* Category chips */}
+      <View style={styles.chipsBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {chips.map((c) => {
+            const on = c.value === activeCat;
+            return (
+              <Pressable
+                key={c.key}
+                onPress={() => setActiveCat(c.value)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                style={[styles.chip, on && styles.chipOn]}
+              >
+                <Text style={[styles.chipText, on && styles.chipTextOn]}>{c.label}</Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </View>
 
-      <ScrollView 
-        className="flex-1 px-4" 
-        contentContainerStyle={{ paddingTop: 24, paddingBottom: 150 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f97316" colors={['#f97316']} />
-        }
-      >
-        {loading ? (
-          <View className="items-center justify-center py-20">
-            <ActivityIndicator color="#f97316" size="large" />
-          </View>
-        ) : error ? (
-          <View className="items-center justify-center py-16 px-6 bg-card rounded-3xl border border-black/5 shadow-sm">
-            <Text className="text-sm font-bold text-gray-800 text-center mb-2">{error}</Text>
-            <Pressable onPress={fetchNews} className="flex-row items-center gap-2 bg-primary-500 px-5 py-2.5 rounded-xl mt-3">
-              <RefreshCw color="white" size={16} />
-              <Text className="text-xs font-black uppercase text-white tracking-wider">Retry Feed</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View className="gap-6">
-            {selectedCategory === 'All' && news.length > 0 && (
-              <View className="mb-2">
-                <View className="flex-row items-center gap-2 mb-4 px-1">
-                  <View className="w-1 h-4 bg-primary-500 rounded-full" />
-                  <Text className="text-[12px] font-bold uppercase tracking-[1px] text-text-main">Top stories</Text>
-                </View>
-                <ScrollView 
-                  horizontal 
-                  showsHorizontalScrollIndicator={false} 
-                  pagingEnabled
-                  decelerationRate="fast"
-                  className="w-full overflow-visible"
-                >
-                  {news.slice(0, 3).map((post) => (
-                    <Pressable 
-                      key={post.id} 
-                      onPress={() => router.push(`/news/${post.id}`)}
-                      className="mr-4 w-[88vw]"
-                    >
-                      <View className="aspect-[16/10] w-full rounded-[40px] overflow-hidden bg-[#0a0a0a] border border-black/5 shadow-xl relative">
-                        <Image source={{ uri: post.imageUrl }} className="absolute inset-0 w-full h-full" />
-                        <View className="absolute inset-0 bg-black/50" />
-                        
-
-                        {/* Removed Breaking badge */}
-
-                        <View className="absolute bottom-8 left-8 right-8">
-                          <Text className="text-primary-500 text-[11px] font-black uppercase tracking-[1px] mb-2">{post.category}</Text>
-                          <Text className="text-xl font-black text-white tracking-tight leading-tight mb-4" numberOfLines={3}>{post.title}</Text>
-                          <View className="flex-row items-center gap-2">
-                            <Calendar color="#f97316" size={14} />
-                            <Text className="text-white/80 text-[11px] font-black uppercase tracking-widest">{post.date}</Text>
-                          </View>
-                        </View>
-                      </View>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            <View className="gap-4">
-              {(selectedCategory === 'All' ? filteredNews.slice(3) : filteredNews).map((post) => (
-              <Pressable
-                key={post.id}
-                onPress={() => router.push(`/news/${post.id}`)}
-                className="flex-row gap-4 p-4 rounded-[32px] bg-card border border-black/5"
-              >
-                <View className="w-28 h-28 rounded-2xl overflow-hidden bg-gray-100">
-                  <Image source={{ uri: post.imageUrl }} className="w-full h-full" />
-                </View>
-                
-                <View className="flex-1 justify-between">
-                  <View>
-                    <View className="flex-row items-center justify-between mb-1">
-                      <Text className="text-[11px] font-black text-primary-500 uppercase tracking-widest">{post.category}</Text>
-                      <Text className="text-[11px] font-black text-black/40 uppercase tracking-widest">{post.date}</Text>
-                    </View>
-                    <Text className="text-[15px] font-bold text-[#0a0a0a] leading-snug" numberOfLines={3}>{post.title}</Text>
-                  </View>
-                  
-                  <View className="flex-row items-center justify-between mt-2">
-                    <Text className="text-[13px] font-bold text-primary-500">Read story</Text>
-                    <Pressable onPress={() => handleShare(post)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Share story" className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center">
-                      <Share2 color="#0a0a0a" size={14} />
-                    </Pressable>
-                  </View>
-                </View>
-              </Pressable>
-            ))}
-          </View>
+      {loading && feed.posts.length === 0 ? (
+        <View style={{ paddingTop: 16 }}>
+          <NewsSkeleton />
         </View>
-        )}
-      </ScrollView>
+      ) : error && feed.posts.length === 0 ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorTitle}>News didn&apos;t load</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <Pressable onPress={() => loadFirstPage('initial')} style={styles.retry} accessibilityRole="button">
+            <RefreshCw color="#fff" size={16} />
+            <Text style={styles.retryText}>Try again</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <FlatList
+          ref={listRef}
+          data={feed.posts}
+          keyExtractor={(p) => String(p.id)}
+          renderItem={renderItem}
+          extraData={now}
+          ItemSeparatorComponent={RowSeparator}
+          contentContainerStyle={{ paddingTop: 16, paddingBottom: 170 }}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.6}
+          initialNumToRender={6}
+          maxToRenderPerBatch={8}
+          windowSize={9}
+          removeClippedSubviews={Platform.OS === 'android'}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadFirstPage('refresh')}
+              tintColor="#f97316"
+              colors={['#f97316']}
+            />
+          }
+          ListEmptyComponent={
+            <Text style={styles.empty}>No stories in this section yet.</Text>
+          }
+          ListFooterComponent={
+            loadingMore ? (
+              <ActivityIndicator color="#f97316" style={{ marginVertical: 24 }} />
+            ) : feed.posts.length > 0 && feed.page >= feed.totalPages ? (
+              <Text style={styles.footer}>You&apos;re all caught up</Text>
+            ) : null
+          }
+        />
+      )}
+
+      {/* New stories pill */}
+      {freshPosts.length > 0 && (
+      <Animated.View
+        pointerEvents="box-none"
+        style={[
+          styles.pillWrap,
+          {
+            top: insets.top + 118,
+            opacity: pill,
+            transform: [{ translateY: pill.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
+          },
+        ]}
+      >
+        <Pressable onPress={showFresh} style={styles.pill} accessibilityRole="button">
+          <ArrowUp color="#fff" size={16} />
+          <Text style={styles.pillText}>
+            {freshPosts.length === 1 ? '1 new story' : `${freshPosts.length} new stories`}
+          </Text>
+        </Pressable>
+      </Animated.View>
+      )}
+
+      <StoryPreviewSheet post={preview} now={now} onClose={() => setPreview(null)} onOpen={openPost} />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: '#F2F0EC' },
+  header: { paddingHorizontal: 16, paddingBottom: 4 },
+  date: { fontSize: 13, fontWeight: '600', color: '#6b6560' },
+  title: { fontSize: 32, fontWeight: '900', color: '#171717', letterSpacing: -0.8, marginTop: 2 },
+  chipsBar: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(23,23,23,0.1)',
+  },
+  chips: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
+  chip: {
+    paddingHorizontal: 14,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(23,23,23,0.06)',
+  },
+  chipOn: { backgroundColor: '#171717' },
+  chipText: { fontSize: 14, fontWeight: '600', color: '#3d3935' },
+  chipTextOn: { color: '#FAF9F6' },
+  errorBox: { margin: 16, padding: 24, borderRadius: 16, backgroundColor: '#FAF9F6', alignItems: 'center', gap: 8 },
+  errorTitle: { fontSize: 17, fontWeight: '800', color: '#171717' },
+  errorText: { fontSize: 14, color: '#6b6560', textAlign: 'center' },
+  retry: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f97316',
+    paddingHorizontal: 18,
+    height: 44,
+    borderRadius: 22,
+  },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  empty: { textAlign: 'center', color: '#6b6560', marginTop: 48, fontSize: 15 },
+  footer: { textAlign: 'center', color: '#9a928b', marginVertical: 28, fontSize: 13, fontWeight: '600' },
+  pillWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 20 },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#f97316',
+    paddingHorizontal: 16,
+    height: 38,
+    borderRadius: 19,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  pillText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+});

@@ -1,176 +1,191 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, Pressable, ActivityIndicator, useWindowDimensions, Linking, Share } from 'react-native';
-import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Share2, User, Calendar, ExternalLink } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, Pressable, useWindowDimensions, Linking, Share, StyleSheet } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { ArrowLeft, Share2, ExternalLink } from 'lucide-react-native';
 import RenderHtml from 'react-native-render-html';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { APP_NAME } from '../../constants/brand';
-import { htmlToText } from '../../utils/html';
+import { fetchPost, postCache, readingMinutes, timeAgo, NewsPost } from '../../lib/news';
+import { NewsImage } from '../../components/news/NewsCards';
 
-const API_BASE = 'https://247digitaltvtz.co.tz/wp/wp-json/wp/v2';
+type FullPost = NewsPost & { content?: string };
+
+const tagsStyles: any = {
+  body: { color: '#2b2724' },
+  p: { fontSize: 17, lineHeight: 28, marginTop: 0, marginBottom: 18 },
+  h2: { fontSize: 21, lineHeight: 27, fontWeight: '800', color: '#171717', marginTop: 26, marginBottom: 12 },
+  h3: { fontSize: 18, lineHeight: 24, fontWeight: '800', color: '#171717', marginTop: 22, marginBottom: 10 },
+  blockquote: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#f97316',
+    paddingLeft: 14,
+    marginVertical: 18,
+    fontStyle: 'italic',
+    color: '#4a4541',
+  },
+  img: { borderRadius: 14 },
+  li: { fontSize: 17, lineHeight: 28 },
+  a: { color: '#ea580c', textDecorationLine: 'none' },
+};
 
 export default function NewsDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
-  const { width, height } = useWindowDimensions();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const [post, setPost] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+
+  // Show what the list already knows straight away, then fill in the body
+  const [post, setPost] = useState<FullPost | null>(() => postCache.get(Number(id)) ?? null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/posts/${id}?_embed`);
-        const data = await res.json();
-        setPost({
-          id: data.id,
-          title: htmlToText(data.title.rendered),
-          excerpt: data.excerpt.rendered,
-          content: data.content.rendered,
-          date: new Date(data.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-          category: data._embedded?.['wp:term']?.[0]?.[0]?.name || 'News',
-          imageUrl: data._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?q=80&w=800',
-          link: data.link
-        });
-      } catch (err) {
-        console.error('Failed to fetch post:', err);
-      } finally {
-        setLoading(false);
-      }
+    let alive = true;
+    setFailed(false);
+    fetchPost(id)
+      .then((full) => alive && setPost(full))
+      .catch(() => alive && setFailed(true));
+    return () => {
+      alive = false;
     };
-    fetchPost();
   }, [id]);
 
-  const handleShare = async () => {
-    if (post) {
-      try {
-        await Share.share({
-          message: `${post.title} - Read more: ${post.link}`,
-          url: post.link,
-          title: post.title,
-        });
-      } catch (err) {
-        console.error(err);
-      }
-    }
+  const minutes = useMemo(() => (post?.content ? readingMinutes(post.content) : null), [post?.content]);
+  const contentWidth = Math.min(width, 720) - 40;
+
+  const handleBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)/news'));
+
+  const handleShare = () => {
+    if (!post) return;
+    Share.share({ message: `${post.title}\n${post.link}`, url: post.link, title: post.title }).catch(() => {});
   };
-
-  const tagsStyles = {
-    p: { fontSize: 16, lineHeight: 26, color: '#333', marginBottom: 20 },
-    h2: { fontSize: 22, fontWeight: '800', color: '#000', marginTop: 30, marginBottom: 16 },
-    blockquote: { borderLeftWidth: 4, borderLeftColor: '#f97316', paddingLeft: 16, fontStyle: 'italic', fontSize: 18, color: '#555', marginVertical: 20 },
-    img: { borderRadius: 24, marginVertical: 20 },
-    li: { fontSize: 16, lineHeight: 26, color: '#333' }
-  };
-
-  const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)/news' as any);
-    }
-  };
-
-  if (loading) {
-    return (
-      <View className="flex-1 bg-card items-center justify-center">
-        <ActivityIndicator color="#f97316" size="large" />
-      </View>
-    );
-  }
-
-  if (!post) {
-    return (
-      <View className="flex-1 bg-card items-center justify-center px-6">
-        <Stack.Screen options={{ headerShown: false }} />
-        <Text className="text-xl font-black text-text-main mb-2">Article Not Found</Text>
-        <Text className="text-xs text-text-muted text-center mb-6">The requested news post could not be loaded or is unavailable.</Text>
-        <Pressable onPress={handleBack} className="bg-primary-500 px-6 py-3 rounded-2xl flex-row items-center gap-2">
-          <ArrowLeft color="white" size={18} />
-          <Text className="text-white text-xs font-black uppercase tracking-wider">Back to News</Text>
-        </Pressable>
-      </View>
-    );
-  }
 
   return (
-    <View className="flex-1 bg-card">
-      <Stack.Screen options={{ headerShown: false }} />
-      
-      {/* Fixed Header Controls */}
-      <View className="absolute top-0 left-0 right-0 z-[100] flex-row justify-between items-center px-6" style={{ paddingTop: insets.top + 8 }}>
-        <Pressable onPress={handleBack} accessibilityRole="button" accessibilityLabel="Back" className="w-12 h-12 rounded-2xl bg-[#00000050] items-center justify-center border border-white/20">
-          <ArrowLeft color="white" size={24} />
+    <View style={styles.screen}>
+      {/* Top bar */}
+      <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
+        <Pressable onPress={handleBack} accessibilityRole="button" accessibilityLabel="Back" style={styles.iconBtn} hitSlop={6}>
+          <ArrowLeft color="#171717" size={22} />
         </Pressable>
-        <Pressable onPress={handleShare} accessibilityRole="button" accessibilityLabel="Share story" className="w-12 h-12 rounded-2xl bg-primary-500/90 items-center justify-center border border-primary-500/30 shadow-lg">
-          <Share2 color="white" size={20} />
+        <Pressable
+          onPress={handleShare}
+          disabled={!post}
+          accessibilityRole="button"
+          accessibilityLabel="Share story"
+          style={styles.iconBtn}
+          hitSlop={6}
+        >
+          <Share2 color="#171717" size={20} />
         </Pressable>
       </View>
 
-      <ScrollView bounces={false} className="flex-1">
-        {/* Immersive Hero Header */}
-        <View className="w-full" style={{ height: height * 0.6 }}>
-          <Image source={{ uri: post.imageUrl }} className="w-full h-full absolute inset-0" />
-          <View className="absolute inset-0 bg-black/40" />
-
-          {/* Title Overlay */}
-          <View className="absolute bottom-0 left-0 right-0 p-8">
-            <View className="flex-row items-center gap-3 mb-4">
-              <View className="bg-primary-500 px-3 py-1.5 rounded-md">
-                <Text className="text-white text-[11px] font-black uppercase tracking-[1px]">{post.category}</Text>
-              </View>
-              <View className="w-1.5 h-1.5 rounded-full bg-white/30" />
-              <Text className="text-[11px] text-white/70 font-black uppercase tracking-widest">{post.date}</Text>
-            </View>
-            <Text className="text-3xl font-black text-white tracking-tight leading-tight">{post.title}</Text>
-          </View>
+      {!post && failed ? (
+        <View style={styles.center}>
+          <Text style={styles.notFoundTitle}>This story didn&apos;t load</Text>
+          <Text style={styles.notFoundText}>Check your connection, or go back and try another story.</Text>
+          <Pressable onPress={handleBack} style={styles.primaryBtn} accessibilityRole="button">
+            <Text style={styles.primaryBtnText}>Back to News</Text>
+          </Pressable>
         </View>
+      ) : (
+        <ScrollView contentContainerStyle={{ paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
+          <View style={styles.inner}>
+            {post ? (
+              <>
+                <Text style={styles.category}>{post.category}</Text>
+                <Text style={styles.headline} accessibilityRole="header">
+                  {post.title}
+                </Text>
+                <Text style={styles.byline}>
+                  {post.author ? `By ${post.author}  ·  ` : ''}
+                  {timeAgo(post.dateGmt)}
+                  {minutes ? `  ·  ${minutes} min read` : ''}
+                </Text>
+                <NewsImage uri={post.image ?? post.thumb} category={post.category} style={styles.hero} big />
 
-        {/* Article Content */}
-        <View className="bg-card rounded-t-[40px] -mt-10 pt-10 px-6 pb-32 shadow-2xl">
-          {/* Meta Info */}
-          <View className="flex-row items-center gap-6 pb-8 mb-8 border-b border-black/5">
-            <View className="flex-1 flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-full bg-primary-500/10 items-center justify-center">
-                <User color="#f97316" size={20} />
-              </View>
-              <View className="flex-1">
-                <Text className="text-[11px] font-black uppercase tracking-widest text-text-muted">Published by</Text>
-                <Text className="text-[13px] font-bold text-text-main mt-0.5" numberOfLines={2}>{APP_NAME}</Text>
-              </View>
-            </View>
-            <View className="w-[1px] h-10 bg-black/5" />
-            <View className="flex-row items-center gap-3">
-              <View className="w-10 h-10 rounded-full bg-yellow-500/10 items-center justify-center">
-                <Calendar color="#eab308" size={20} />
-              </View>
-              <View>
-                <Text className="text-[11px] font-black uppercase tracking-widest text-text-muted">Published on</Text>
-                <Text className="text-xs font-black text-text-main uppercase tracking-tighter mt-0.5">{post.date}</Text>
-              </View>
-            </View>
+                {post.content ? (
+                  <RenderHtml
+                    contentWidth={contentWidth}
+                    source={{ html: post.content }}
+                    tagsStyles={tagsStyles}
+                    enableExperimentalMarginCollapsing
+                  />
+                ) : (
+                  <BodySkeleton />
+                )}
+
+                <Pressable
+                  onPress={() => Linking.openURL(post.link)}
+                  accessibilityRole="link"
+                  style={styles.sourceLink}
+                >
+                  <Text style={styles.sourceText}>Read on the website</Text>
+                  <ExternalLink color="#ea580c" size={16} />
+                </Pressable>
+              </>
+            ) : (
+              <BodySkeleton withHeader />
+            )}
           </View>
-
-          {/* HTML Render */}
-          <RenderHtml
-            contentWidth={width - 48}
-            source={{ html: post.content }}
-            tagsStyles={tagsStyles as any}
-          />
-
-          {/* Official Source Link */}
-          <View className="mt-10 pt-10 border-t border-black/5 items-center">
-            <Text className="text-xs font-black uppercase tracking-[1px] text-text-muted mb-6">Supported Channel</Text>
-            <Pressable 
-              onPress={() => Linking.openURL(post.link)}
-              className="w-full h-16 rounded-[32px] bg-[#0a0a0a] flex-row items-center justify-center gap-4 shadow-xl"
-            >
-              <Text className="text-white text-[11px] font-black uppercase tracking-[1px]">Official Source</Text>
-              <ExternalLink color="white" size={20} />
-            </Pressable>
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </View>
   );
 }
+
+function BodySkeleton({ withHeader = false }: { withHeader?: boolean }) {
+  const line = (w: `${number}%`, h = 14) => <View style={{ width: w, height: h, borderRadius: 6, backgroundColor: '#E6E2DC' }} />;
+  return (
+    <View style={{ gap: 12, paddingTop: 4 }} accessibilityLabel="Loading story">
+      {withHeader && (
+        <>
+          {line('30%', 12)}
+          {line('95%', 24)}
+          {line('80%', 24)}
+          {line('50%', 12)}
+          <View style={[styles.hero, { backgroundColor: '#E6E2DC' }]} />
+        </>
+      )}
+      {line('100%')}
+      {line('96%')}
+      {line('92%')}
+      {line('70%')}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: '#FAF9F6' },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingBottom: 6,
+    backgroundColor: '#FAF9F6',
+  },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(23,23,23,0.06)',
+  },
+  inner: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8 },
+  category: { fontSize: 13, fontWeight: '800', color: '#ea580c', marginBottom: 8 },
+  headline: { fontSize: 26, lineHeight: 32, fontWeight: '900', color: '#171717', letterSpacing: -0.5 },
+  byline: { fontSize: 13.5, color: '#6b6560', fontWeight: '500', marginTop: 10, marginBottom: 16 },
+  hero: { width: '100%', aspectRatio: 16 / 9, borderRadius: 14, overflow: 'hidden', marginBottom: 20 },
+  sourceLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    paddingVertical: 10,
+  },
+  sourceText: { color: '#ea580c', fontWeight: '700', fontSize: 15 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8 },
+  notFoundTitle: { fontSize: 19, fontWeight: '800', color: '#171717' },
+  notFoundText: { fontSize: 15, color: '#6b6560', textAlign: 'center' },
+  primaryBtn: { marginTop: 12, backgroundColor: '#f97316', paddingHorizontal: 22, height: 46, borderRadius: 23, justifyContent: 'center' },
+  primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+});

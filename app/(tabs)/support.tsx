@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Share } from 'react-native';
+import { Tap } from '../../components/ui/Tap';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, Mail, Phone, MessageSquare, ChevronRight, Globe, Tv, Bell, Info, SquarePlay, Shield, Share2 } from 'lucide-react-native';
@@ -37,12 +38,12 @@ export default function MoreScreen() {
   ].filter(Boolean) as MenuItem[];
 
   const renderItem = (item: MenuItem) => (
-    <Pressable
+    <Tap
       key={item.key}
       onPress={item.onPress}
       accessibilityRole="button"
       accessibilityLabel={item.title}
-      style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
+      style={styles.menuItem} pressedStyle={{ opacity: 0.7 }}
     >
       <View style={styles.menuIconContainer}>
         <item.icon color="#f97316" size={22} />
@@ -52,7 +53,7 @@ export default function MoreScreen() {
         <Text style={styles.menuDesc}>{item.desc}</Text>
       </View>
       <ChevronRight color="#9ca3af" size={20} />
-    </Pressable>
+    </Tap>
   );
 
   return (

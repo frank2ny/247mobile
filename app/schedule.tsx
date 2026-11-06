@@ -1,59 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { APP_NAME } from '../constants/brand';
 import { ArrowLeft, Clock, Calendar, Radio, Tv, User } from 'lucide-react-native';
-
-interface ShowSchedule {
-  id: string;
-  title: string;
-  host: string;
-  startTime: string;
-  endTime: string;
-  category: string;
-  type: 'radio' | 'tv';
-  imageUrl: string;
-  isLive?: boolean;
-}
-
-const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-
-const SCHEDULE_DATA: Record<string, ShowSchedule[]> = {
-  MON: [
-    { id: 'm1', title: 'Asubuhi Njema Live', host: 'DJ Sky & Sarah J', startTime: '06:00', endTime: '10:00', category: 'Morning Drive', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=800', isLive: true },
-    { id: 'm2', title: 'Top 20 Swahili Countdown', host: 'Mike D', startTime: '10:00', endTime: '13:00', category: 'Music & Hits', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1478737270239-2fccd2cdea8a?q=80&w=800' },
-    { id: 'm3', title: 'Digital Prime News TV', host: 'Editorial Desk', startTime: '13:00', endTime: '14:00', category: 'News Bulletin', type: 'tv', imageUrl: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?q=80&w=800' },
-    { id: 'm4', title: 'Vibe la Jioni', host: 'Captain Frank', startTime: '14:00', endTime: '18:00', category: 'Afternoon Show', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1520529277867-dbf8c5e0b340?q=80&w=800' },
-    { id: 'm5', title: 'Swahili Cinema Special', host: 'Video Crew', startTime: '18:00', endTime: '21:00', category: 'TV Entertainment', type: 'tv', imageUrl: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=800' },
-  ],
-  TUE: [
-    { id: 't1', title: 'Asubuhi Njema Live', host: 'DJ Sky', startTime: '06:00', endTime: '10:00', category: 'Morning Drive', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=800' },
-    { id: 't2', title: 'Tech & Bongo Trends', host: 'Sarah J', startTime: '10:00', endTime: '14:00', category: 'Culture & Tech', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1516280440502-6c56b7c53d5a?q=80&w=800' },
-    { id: 't3', title: 'Usiku wa Rhythm', host: 'DJ Flex', startTime: '18:00', endTime: '22:00', category: 'Night Session', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800' },
-  ],
-  WED: [
-    { id: 'w1', title: 'Midday Swahili Mix', host: 'Sarah J', startTime: '10:00', endTime: '14:00', category: 'Music', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1478737270239-2fccd2cdea8a?q=80&w=800' },
-    { id: 'w2', title: 'Spotlight Tanzania', host: 'Editorial Team', startTime: '15:00', endTime: '17:00', category: 'Documentary', type: 'tv', imageUrl: 'https://images.unsplash.com/photo-1505373676634-31976f08e4ba?q=80&w=800' },
-  ],
-  THU: [
-    { id: 'th1', title: 'Asubuhi Njema Live', host: 'DJ Sky', startTime: '06:00', endTime: '10:00', category: 'Morning Drive', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=800' },
-  ],
-  FRI: [
-    { id: 'f1', title: 'Weekend Warmup', host: 'Full Crew', startTime: '16:00', endTime: '22:00', category: 'Party Mix', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=800' },
-  ],
-  SAT: [
-    { id: 'sa1', title: 'Saturday Bongo Flava', host: 'DJ Sky', startTime: '12:00', endTime: '18:00', category: 'Bongo Flava', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800' },
-  ],
-  SUN: [
-    { id: 'su1', title: 'Sunday Gospel & Reflection', host: 'Sister Mary', startTime: '07:00', endTime: '12:00', category: 'Gospel & Inspiration', type: 'radio', imageUrl: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?q=80&w=800' },
-  ],
-};
+import { DAYS, SCHEDULE_DATA, dayKey, isOnNow } from '../lib/schedule';
 
 export default function ScheduleScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [selectedDay, setSelectedDay] = useState(DAYS[(new Date().getDay() + 6) % 7]);
+  const { day } = useLocalSearchParams<{ day?: string }>();
+  const [selectedDay, setSelectedDay] = useState<string>(day && DAYS.includes(day as any) ? day : dayKey());
   const [filterType, setFilterType] = useState<'all' | 'radio' | 'tv'>('all');
 
   const rawList = SCHEDULE_DATA[selectedDay] || SCHEDULE_DATA['MON'];
@@ -141,12 +98,12 @@ export default function ScheduleScreen() {
               <View 
                 key={show.id} 
                 className={`p-4 rounded-3xl border flex-row gap-4 relative overflow-hidden ${
-                  show.isLive ? 'bg-primary-500/10 border-primary-500/40' : 'bg-white/5 border-white/5'
+                  (selectedDay === dayKey() && isOnNow(show)) ? 'bg-primary-500/10 border-primary-500/40' : 'bg-white/5 border-white/5'
                 }`}
               >
                 <View className="w-24 h-24 rounded-2xl overflow-hidden bg-black/40">
                   <Image source={{ uri: show.imageUrl }} className="w-full h-full" />
-                  {show.isLive && (
+                  {(selectedDay === dayKey() && isOnNow(show)) && (
                     <View className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-primary-500 flex-row items-center">
                       <View className="w-1.5 h-1.5 rounded-full bg-card mr-1" />
                       <Text className="text-[11px] font-black uppercase text-white tracking-wider">LIVE</Text>

@@ -4,45 +4,8 @@ import { Tv, Share2, Play, RefreshCw } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { APP_NAME, YOUTUBE_URL } from '../../constants/brand';
-
-const CHANNEL_ID = 'UCuAnKqEQtc7v1-uvXhLmhyg';
-const YOUTUBE_RSS_JSON = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(`https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}`)}`;
-
-interface YouTubeVideo {
-  id: string;
-  title: string;
-  pubDate: string;
-  thumbnail: string;
-  link: string;
-  author: string;
-}
-
-const FALLBACK_VIDEOS: YouTubeVideo[] = [
-  {
-    id: 'O6c5hZIrZ54',
-    title: 'AZIZ KI ATOA NENO KWA MARA YA KWANZA',
-    pubDate: '2026-08-16',
-    thumbnail: 'https://i4.ytimg.com/vi/O6c5hZIrZ54/hqdefault.jpg',
-    link: 'https://www.youtube.com/watch?v=O6c5hZIrZ54',
-    author: 'Digitaltvtz'
-  },
-  {
-    id: '-gMRMTBLAKg',
-    title: 'KMC LEO PALITAPIKA FULL HOUSE',
-    pubDate: '2026-08-15',
-    thumbnail: 'https://i2.ytimg.com/vi/-gMRMTBLAKg/hqdefault.jpg',
-    link: 'https://www.youtube.com/watch?v=-gMRMTBLAKg',
-    author: 'Digitaltvtz'
-  },
-  {
-    id: 'sgyopy4apME',
-    title: 'YANGA WANAMTAMBULISHA AZIZ KI HAPA KMC',
-    pubDate: '2026-08-15',
-    thumbnail: 'https://i4.ytimg.com/vi/sgyopy4apME/hqdefault.jpg',
-    link: 'https://www.youtube.com/watch?v=sgyopy4apME',
-    author: 'Digitaltvtz'
-  }
-];
+import { useLocalSearchParams } from 'expo-router';
+import { FALLBACK_VIDEOS, fetchLatestVideos, YouTubeVideo } from '../../lib/videos';
 
 export default function TVScreen() {
   const [videos, setVideos] = useState<YouTubeVideo[]>(FALLBACK_VIDEOS);
@@ -51,52 +14,35 @@ export default function TVScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const extractVideoId = (guidOrLink: string): string => {
-    if (!guidOrLink) return '';
-    const match = guidOrLink.match(/(?:v=|yt:video:|\/shorts\/|\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    return match ? match[1] : guidOrLink;
-  };
+  const { v } = useLocalSearchParams<{ v?: string }>();
 
-  const fetchLatestVideos = useCallback(async () => {
+  const loadVideos = useCallback(async (force = false) => {
     try {
-      const res = await fetch(YOUTUBE_RSS_JSON);
-      if (!res.ok) throw new Error('Network response was not ok');
-      const data = await res.json();
-      
-      if (data.status === 'ok' && Array.isArray(data.items) && data.items.length > 0) {
-        const parsed: YouTubeVideo[] = data.items.map((item: any) => {
-          const vId = extractVideoId(item.guid || item.link);
-          return {
-            id: vId,
-            title: item.title || 'Video',
-            pubDate: item.pubDate ? new Date(item.pubDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Recent',
-            thumbnail: item.thumbnail || item.enclosure?.thumbnail || `https://i.ytimg.com/vi/${vId}/hqdefault.jpg`,
-            link: item.link || `https://www.youtube.com/watch?v=${vId}`,
-            author: item.author || 'Digitaltvtz'
-          };
-        });
-
-        setVideos(parsed);
-        setSelectedVideo(parsed[0]);
-      } else {
-        setVideos(FALLBACK_VIDEOS);
-      }
+      const list = await fetchLatestVideos(force);
+      setVideos(list);
+      setSelectedVideo(list.find((x) => x.id === v) ?? list[0]);
     } catch (err: any) {
       console.warn('YouTube feed fetch notice, using fallback feed:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [v]);
+
+  // A video tapped on Home arrives as ?v=<id>
+  useEffect(() => {
+    if (!v) return;
+    setSelectedVideo((cur) => videos.find((x) => x.id === v) ?? cur);
+  }, [v, videos]);
 
   useEffect(() => {
-    fetchLatestVideos();
-  }, [fetchLatestVideos]);
+    loadVideos();
+  }, [loadVideos]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchLatestVideos();
-  }, [fetchLatestVideos]);
+    loadVideos(true);
+  }, [loadVideos]);
 
   const handleShare = async () => {
     if (!selectedVideo) return;

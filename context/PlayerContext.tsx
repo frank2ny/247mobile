@@ -170,7 +170,18 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [currentTrack, player, shouldPlayOnLoad, configureAudioMode, configureLockScreen]);
 
+  // Whether the listener asked for audio. The stream can report "buffering" while idle,
+  // so the spinner only shows after a play request.
+  const [wantsToPlay, setWantsToPlay] = useState(false);
+  const wasPlaying = useRef(false);
+  useEffect(() => {
+    // Paused from the lock screen or notification: forget the play request
+    if (wasPlaying.current && !status.playing && !status.didJustFinish) setWantsToPlay(false);
+    wasPlaying.current = Boolean(status.playing);
+  }, [status.playing, status.didJustFinish]);
+
   const play = async (track?: AudioState['currentTrack']) => {
+    setWantsToPlay(true);
     await configureAudioMode();
     await requestAndroidNotificationPermission();
 
@@ -184,13 +195,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const pause = () => {
+    setWantsToPlay(false);
     player.pause();
   };
 
   const toggle = async () => {
     if (status.playing) {
+      setWantsToPlay(false);
       player.pause();
     } else {
+      setWantsToPlay(true);
       await configureAudioMode();
       await requestAndroidNotificationPermission();
       configureLockScreen(currentTrack);
@@ -202,7 +216,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setVolumeState(v);
   };
 
-  const isBuffering = Boolean(status.isBuffering || (status.playing && status.isLoaded === false));
+  const isBuffering = wantsToPlay && Boolean(status.isBuffering || !status.isLoaded || !status.playing);
 
   return (
     <PlayerContext.Provider value={{ 

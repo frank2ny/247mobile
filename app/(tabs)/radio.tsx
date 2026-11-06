@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Image, ScrollView, Pressable, ActivityIndicator, StyleSheet, Animated, Share, Easing, AccessibilityInfo, useWindowDimensions } from 'react-native';
+import { Tap } from '../../components/ui/Tap';
 import { Play, Pause, Bell, Share2, Calendar, Clock, CalendarDays, Globe } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlayer } from '../../context/PlayerContext';
@@ -177,11 +178,11 @@ export default function RadioScreen() {
               <Share2 color="rgba(255,255,255,0.8)" size={22} />
             </Pressable>
 
-            <Pressable
+            <Tap
               onPress={toggle}
               accessibilityRole="button"
               accessibilityLabel={isPlaying ? 'Pause' : 'Play live radio'}
-              style={({ pressed }) => [styles.playBtnLarge, pressed && { transform: [{ scale: 0.95 }] }]}
+              style={styles.playBtnLarge} pressedStyle={{ transform: [{ scale: 0.95 }] }}
             >
               {isBuffering ? (
                 <ActivityIndicator color="white" size="large" />
@@ -190,7 +191,7 @@ export default function RadioScreen() {
               ) : (
                 <Play color="white" fill="white" size={34} style={{ marginLeft: 4 }} />
               )}
-            </Pressable>
+            </Tap>
 
             <Pressable
               onPress={() => setActiveTab('schedule')}

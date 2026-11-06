@@ -51,8 +51,8 @@ export const PlayerOverlay = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Hide overlay on the main radio/player page
-  if (!currentTrack || pathname === '/radio') return null;
+  // Hidden on the player and on Home, which has its own play button in the live panel
+  if (!currentTrack || pathname === '/radio' || pathname === '/') return null;
 
   const bottomOffset = 56 + Math.max(insets.bottom, 8) + 14;
 

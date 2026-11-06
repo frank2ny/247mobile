@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { Platform, Linking } from 'react-native';
 
-export const CURRENT_APP_VERSION = Constants.expoConfig?.version || '1.0.9';
+export const CURRENT_APP_VERSION = Constants.expoConfig?.version || '1.0.10';
 
 // Store links & Privacy Policy for 247 Digital Swahili Radio
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.digitaltvtz.app';

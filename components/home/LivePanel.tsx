@@ -10,7 +10,7 @@ import { onAirNow, OnAir } from '../../lib/schedule';
 import { APP_NAME } from '../../constants/brand';
 
 // Studio microphone photo used on the Home banner (the image from the original design)
-const BANNER_IMAGE = 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=1200';
+export const BANNER_IMAGE = 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=1200';
 
 function greeting(d = new Date()) {
   const h = d.getHours();
@@ -20,7 +20,7 @@ function greeting(d = new Date()) {
 }
 
 /** Four bars that bounce while audio plays; still when Reduce Motion is on. */
-function SoundBars({ active }: { active: boolean }) {
+export function SoundBars({ active }: { active: boolean }) {
   const bars = useRef([0, 1, 2, 3].map(() => new Animated.Value(0.4))).current;
   const [reduce, setReduce] = useState(false);
 

@@ -10,13 +10,15 @@
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleDebug"
-      }
+      },
+      "environment": "development"
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "environment": "preview"
     },
     "production": {
       "autoIncrement": true,
@@ -25,7 +27,8 @@
       },
       "buildArtifactPaths": [
         "android/app/build/outputs/mapping/release/mapping.txt"
-      ]
+      ],
+      "environment": "production"
     }
   },
   "submit": {

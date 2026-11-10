@@ -3,10 +3,14 @@ import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, RefreshCon
 import { Tv, Share2, Play, RefreshCw } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { APP_NAME, YOUTUBE_URL } from '../../constants/brand';
+import { APP_NAME, WEBSITE_URL, YOUTUBE_URL } from '../../constants/brand';
 import { useLocalSearchParams } from 'expo-router';
 import { isYouTubeEmbedUrl, isYouTubeId, openExternal } from '../../utils/safeLink';
 import { FALLBACK_VIDEOS, fetchLatestVideos, formatViews, YouTubeVideo } from '../../lib/videos';
+
+// YouTube refuses embeds without a referrer (player error 153). Loading the player page
+// "from" our website gives the iframe a real origin and Referer.
+const EMBED_ORIGIN = WEBSITE_URL;
 
 export default function TVScreen() {
   const [videos, setVideos] = useState<YouTubeVideo[]>(FALLBACK_VIDEOS);
@@ -109,7 +113,7 @@ export default function TVScreen() {
               domStorageEnabled
               // Keep the WebView to the YouTube player: no file access, no pop-up windows,
               // and any other page (e.g. "Watch on YouTube") opens outside the app
-              originWhitelist={['about:*', 'data:*', 'https://www.youtube-nocookie.com', 'https://www.youtube.com']}
+              originWhitelist={['about:*', 'data:*', EMBED_ORIGIN, 'https://www.youtube-nocookie.com', 'https://www.youtube.com']}
               allowFileAccess={false}
               allowFileAccessFromFileURLs={false}
               allowUniversalAccessFromFileURLs={false}
@@ -118,6 +122,8 @@ export default function TVScreen() {
               mixedContentMode="never"
               onShouldStartLoadWithRequest={(req) => {
                 if (req.url.startsWith('about:') || req.url.startsWith('data:')) return true;
+                // The player page itself, loaded with our website as its base URL
+                if (req.url.replace(/\/$/, '') === EMBED_ORIGIN) return true;
                 if (req.isTopFrame === false || isYouTubeEmbedUrl(req.url)) return true;
                 openExternal(req.url);
                 return false;
@@ -125,11 +131,13 @@ export default function TVScreen() {
               allowsInlineMediaPlayback
               mediaPlaybackRequiresUserAction={false}
               source={{
+                baseUrl: EMBED_ORIGIN,
                 html: `
                   <!DOCTYPE html>
                   <html>
                     <head>
                       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+                      <meta name="referrer" content="strict-origin-when-cross-origin">
                       <style>
                         body { margin: 0; padding: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; }
                         iframe { width: 100%; height: 100%; border: none; }
@@ -137,7 +145,8 @@ export default function TVScreen() {
                     </head>
                     <body>
                       <iframe 
-                        src="https://www.youtube-nocookie.com/embed/${selectedVideo.id}?autoplay=1&playsinline=1&rel=0&modestbranding=1" 
+                        src="https://www.youtube-nocookie.com/embed/${selectedVideo.id}?autoplay=1&playsinline=1&rel=0&modestbranding=1&origin=${encodeURIComponent(EMBED_ORIGIN)}&widget_referrer=${encodeURIComponent(EMBED_ORIGIN)}"
+                        referrerpolicy="strict-origin-when-cross-origin"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                         allowfullscreen
                       ></iframe>

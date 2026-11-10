@@ -5,7 +5,8 @@ import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { APP_NAME, YOUTUBE_URL } from '../../constants/brand';
 import { useLocalSearchParams } from 'expo-router';
-import { FALLBACK_VIDEOS, fetchLatestVideos, YouTubeVideo } from '../../lib/videos';
+import { isYouTubeEmbedUrl, isYouTubeId, openExternal } from '../../utils/safeLink';
+import { FALLBACK_VIDEOS, fetchLatestVideos, formatViews, YouTubeVideo } from '../../lib/videos';
 
 export default function TVScreen() {
   const [videos, setVideos] = useState<YouTubeVideo[]>(FALLBACK_VIDEOS);
@@ -101,11 +102,26 @@ export default function TVScreen() {
       >
         {/* Embedded YouTube Player Container */}
         <View className="w-full aspect-video rounded-[32px] overflow-hidden bg-black mb-6 border border-black/5 shadow-md relative">
-          {selectedVideo?.id ? (
+          {isYouTubeId(selectedVideo?.id) ? (
             <WebView
               style={{ width: '100%', height: '100%', backgroundColor: '#000000' }}
               javaScriptEnabled
               domStorageEnabled
+              // Keep the WebView to the YouTube player: no file access, no pop-up windows,
+              // and any other page (e.g. "Watch on YouTube") opens outside the app
+              originWhitelist={['about:*', 'data:*', 'https://www.youtube-nocookie.com', 'https://www.youtube.com']}
+              allowFileAccess={false}
+              allowFileAccessFromFileURLs={false}
+              allowUniversalAccessFromFileURLs={false}
+              setSupportMultipleWindows={false}
+              javaScriptCanOpenWindowsAutomatically={false}
+              mixedContentMode="never"
+              onShouldStartLoadWithRequest={(req) => {
+                if (req.url.startsWith('about:') || req.url.startsWith('data:')) return true;
+                if (req.isTopFrame === false || isYouTubeEmbedUrl(req.url)) return true;
+                openExternal(req.url);
+                return false;
+              }}
               allowsInlineMediaPlayback
               mediaPlaybackRequiresUserAction={false}
               source={{
@@ -136,9 +152,13 @@ export default function TVScreen() {
             </View>
           )}
 
-          <View className="absolute top-3 right-3 bg-black/60 px-2 py-1 rounded-lg border border-white/10 pointer-events-none">
-            <Text className="text-[11px] font-black text-red-500 uppercase tracking-widest">1080P HD</Text>
-          </View>
+          {selectedVideo?.live && (
+            <View className="absolute top-3 right-3 bg-red-600 px-2 py-1 rounded-lg pointer-events-none">
+              <Text className="text-[11px] font-black text-white uppercase tracking-widest">
+                {selectedVideo.live === 'live' ? '● Live' : 'Upcoming'}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Selected Video Info Card (Light Theme) */}
@@ -151,7 +171,7 @@ export default function TVScreen() {
             <View className="flex-row items-center justify-between mt-4 pt-4 border-t border-black/5">
               <View>
                 <Text className="text-[11px] font-black text-primary-500 uppercase tracking-widest">
-                  Published {selectedVideo.pubDate}
+                  {[formatViews(selectedVideo.views), `Published ${selectedVideo.pubDate}`].filter(Boolean).join('  ·  ')}
                 </Text>
                 <Text className="text-[11px] font-bold text-text-muted uppercase tracking-wider mt-0.5">
                   @Digitaltvtz-p5p
@@ -199,6 +219,11 @@ export default function TVScreen() {
                   >
                     <View className="w-32 aspect-video rounded-2xl overflow-hidden bg-black relative">
                       <Image source={{ uri: item.thumbnail }} className="w-full h-full" />
+                      {(item.duration || item.live) && (
+                        <View className={`absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md ${item.live ? 'bg-red-600' : 'bg-black/75'}`}>
+                          <Text className="text-[11px] font-bold text-white">{item.live === 'live' ? 'LIVE' : item.live ? 'SOON' : item.duration}</Text>
+                        </View>
+                      )}
                       <View className="absolute inset-0 items-center justify-center bg-black/20">
                         <View className={`w-8 h-8 rounded-full items-center justify-center shadow-md ${isCurrent ? 'bg-primary-500' : 'bg-card'}`}>
                           <Play color={isCurrent ? 'white' : '#171717'} size={14} style={{ marginLeft: 2 }} />
@@ -214,7 +239,7 @@ export default function TVScreen() {
                         {item.title}
                       </Text>
                       <Text className="text-[11px] text-text-muted font-bold uppercase tracking-wider">
-                        {item.pubDate} • YouTube
+                        {[formatViews(item.views), item.pubDate].filter(Boolean).join(' • ')}
                       </Text>
                     </View>
                   </Pressable>

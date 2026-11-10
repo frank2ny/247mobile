@@ -5,7 +5,7 @@ import { useRouter, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { Radio, Tv, Mic, CalendarDays, Play, MapPin } from 'lucide-react-native';
 import { dayKey, isOnNow, showsForDay } from '../../lib/schedule';
-import { fetchLatestVideos, YouTubeVideo } from '../../lib/videos';
+import { fetchLatestVideos, formatViews, YouTubeVideo } from '../../lib/videos';
 import { EVENTS_DATA, dateParts } from '../../lib/events';
 
 const C = {
@@ -197,12 +197,17 @@ export function VideoStrip({ refreshKey }: { refreshKey: number }) {
                   <View style={styles.playBadge}>
                     <Play color="#fff" fill="#fff" size={14} style={{ marginLeft: 2 }} />
                   </View>
+                  {v.live ? (
+                    <Text style={[styles.thumbTag, styles.liveTag]}>{v.live === 'live' ? '● LIVE' : 'UPCOMING'}</Text>
+                  ) : v.duration ? (
+                    <Text style={styles.thumbTag}>{v.duration}</Text>
+                  ) : null}
                 </View>
                 <View style={styles.videoBody}>
                   <Text style={styles.videoTitle} numberOfLines={2}>
                     {v.title}
                   </Text>
-                  <Text style={styles.videoMeta}>{v.pubDate}</Text>
+                  <Text style={styles.videoMeta}>{[formatViews(v.views), v.pubDate].filter(Boolean).join('  ·  ')}</Text>
                 </View>
               </Tap>
             ))
@@ -346,6 +351,21 @@ const styles = StyleSheet.create({
   videoBody: { padding: 10, gap: 4 },
   videoTitle: { fontSize: 14, lineHeight: 18, fontWeight: '700', color: C.text },
   videoMeta: { fontSize: 12, color: C.muted, fontWeight: '500' },
+  thumbTag: {
+    position: 'absolute',
+    left: 8,
+    bottom: 8,
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: 'hidden',
+    fontVariant: ['tabular-nums'],
+  },
+  liveTag: { backgroundColor: '#dc2626' },
 
   eventCard: {
     width: EVENT_W,

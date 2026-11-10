@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, useWindowDimensions, Linking, Share, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, useWindowDimensions, Share, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Share2, ExternalLink } from 'lucide-react-native';
 import RenderHtml from 'react-native-render-html';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchPost, postCache, readingMinutes, timeAgo, NewsPost } from '../../lib/news';
 import { NewsImage } from '../../components/news/NewsCards';
+import { openExternal } from '../../utils/safeLink';
 
 type FullPost = NewsPost & { content?: string };
 
@@ -27,6 +28,9 @@ const tagsStyles: any = {
   a: { color: '#ea580c', textDecorationLine: 'none' },
 };
 
+// Links inside articles open only as web, email or phone links
+const renderersProps = { a: { onPress: (_e: unknown, href: string) => openExternal(href) } };
+
 export default function NewsDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,6 +44,11 @@ export default function NewsDetailScreen() {
   useEffect(() => {
     let alive = true;
     setFailed(false);
+    // Story ids are numbers; anything else (e.g. from a crafted deep link) is not fetched
+    if (!/^\d+$/.test(String(id))) {
+      setFailed(true);
+      return;
+    }
     fetchPost(id)
       .then((full) => alive && setPost(full))
       .catch(() => alive && setFailed(true));
@@ -106,6 +115,7 @@ export default function NewsDetailScreen() {
                     contentWidth={contentWidth}
                     source={{ html: post.content }}
                     tagsStyles={tagsStyles}
+                    renderersProps={renderersProps}
                     enableExperimentalMarginCollapsing
                   />
                 ) : (
@@ -113,7 +123,7 @@ export default function NewsDetailScreen() {
                 )}
 
                 <Pressable
-                  onPress={() => Linking.openURL(post.link)}
+                  onPress={() => openExternal(post.link)}
                   accessibilityRole="link"
                   style={styles.sourceLink}
                 >

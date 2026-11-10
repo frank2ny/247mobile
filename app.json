@@ -34,7 +34,14 @@
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.WAKE_LOCK"
-      ]
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "allowBackup": false
     },
     "web": {
       "output": "static",
@@ -46,7 +53,6 @@
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true,
             "enableMinifyInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true
           }
@@ -55,6 +61,8 @@
       [
         "expo-audio",
         {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
           "enableBackgroundRecording": false
         }
       ],
